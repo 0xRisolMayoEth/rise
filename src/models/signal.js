@@ -74,14 +74,11 @@ function getSignalById(id) {
 }
 
 /**
- * List signals, optionally filtered by status and/or type.
- * @param {object} [opts]
- * @param {string} [opts.status]
- * @param {string} [opts.type]
- * @param {number} [opts.limit=50]
- * @returns {object[]}
+ * Build the WHERE clause + params shared by listSignals/countSignals.
+ * @param {object} opts
+ * @returns {{ where: string, params: object }}
  */
-function listSignals(opts = {}) {
+function buildFilter(opts = {}) {
   const clauses = [];
   const params = {};
   if (opts.status) {
@@ -93,11 +90,53 @@ function listSignals(opts = {}) {
     params.type = opts.type;
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  return { where, params };
+}
+
+/**
+ * List signals, optionally filtered by status and/or type, with pagination.
+ * @param {object} [opts]
+ * @param {string} [opts.status]
+ * @param {string} [opts.type]
+ * @param {number} [opts.limit=50]
+ * @param {number} [opts.offset=0]
+ * @returns {object[]}
+ */
+function listSignals(opts = {}) {
+  const { where, params } = buildFilter(opts);
   params.limit = opts.limit || 50;
+  params.offset = opts.offset || 0;
 
   return getDb()
-    .prepare(`SELECT * FROM signals ${where} ORDER BY id DESC LIMIT @limit`)
+    .prepare(
+      `SELECT * FROM signals ${where} ORDER BY id DESC LIMIT @limit OFFSET @offset`
+    )
     .all(params);
+}
+
+/**
+ * Count signals matching the same filters as listSignals.
+ * @param {object} [opts]
+ * @returns {number}
+ */
+function countSignals(opts = {}) {
+  const { where, params } = buildFilter(opts);
+  return getDb()
+    .prepare(`SELECT COUNT(*) AS n FROM signals ${where}`)
+    .get(params).n;
+}
+
+/**
+ * Fetch the audit-log rows for a signal, oldest first.
+ * @param {number} signalId
+ * @returns {object[]}
+ */
+function getSignalUpdates(signalId) {
+  return getDb()
+    .prepare(
+      'SELECT * FROM signal_updates WHERE signal_id = ? ORDER BY id ASC'
+    )
+    .all(signalId);
 }
 
 /**
@@ -151,5 +190,7 @@ module.exports = {
   createSignal,
   getSignalById,
   listSignals,
+  countSignals,
+  getSignalUpdates,
   updateStatus,
 };

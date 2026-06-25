@@ -3,14 +3,20 @@
 /**
  * Backend API (Express.js) — serves signal data to the website/dashboard.
  *
- * Scaffold with read endpoints backed by the same SQLite database the
- * Discord bot writes to. Extend as the website prototype is wired up.
+ * Read-only over the same SQLite database the Discord bot writes to.
+ * Endpoints:
+ *   GET /api/health
+ *   GET /api/signals?status&type&limit&offset
+ *   GET /api/signals/:id
+ *   GET /api/signals/:id/updates
+ *   GET /api/stats
+ *   GET /api/calendar?month=YYYY-MM
  *
  *   npm run api
  */
 const path = require('path');
 const config = require('../config');
-const { listSignals, getSignalById } = require('../models/signal');
+const { getDb } = require('../database/db');
 
 function createServer() {
   // Lazy-require so express stays optional until the API is needed.
@@ -20,34 +26,43 @@ function createServer() {
 
   app.use(express.json());
 
+  // Lightweight request logger.
+  app.use((req, _res, next) => {
+    console.log(`[api] ${req.method} ${req.originalUrl}`);
+    next();
+  });
+
   // Serve the (placeholder) static website.
   app.use(express.static(path.join(config.root, 'public')));
 
-  app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
-  // GET /api/signals?status=RUNNING&type=BSJP&limit=50
-  app.get('/api/signals', (req, res) => {
-    const { status, type, limit } = req.query;
-    const signals = listSignals({
-      status,
-      type,
-      limit: limit ? Number(limit) : undefined,
-    });
-    res.json(signals);
+  // Feature routers.
+  app.use('/api/signals', require('./routes/signals'));
+  app.use('/api', require('./routes/stats'));
+
+  // 404 for unmatched /api routes.
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'not found' });
   });
 
-  app.get('/api/signals/:id', (req, res) => {
-    const signal = getSignalById(Number(req.params.id));
-    if (!signal) return res.status(404).json({ error: 'not found' });
-    res.json(signal);
+  // Centralised error handler. Routes throw errors with an optional
+  // `.status`; everything else becomes a 500.
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, _req, res, _next) => {
+    const status = err.status || 500;
+    if (status >= 500) console.error('[api] error:', err);
+    res.status(status).json({ error: err.message || 'internal error' });
   });
 
   return app;
 }
 
 function start() {
+  // Ensure the database/schema exists before serving.
+  getDb();
   const app = createServer();
-  app.listen(config.api.port, () => {
+  return app.listen(config.api.port, () => {
     console.log(`[api] Listening on http://localhost:${config.api.port}`);
   });
 }

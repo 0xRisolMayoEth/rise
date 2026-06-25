@@ -91,6 +91,33 @@ The command computes the entry **AVG**, inserts a `RUNNING` signal into SQLite
 └ 24 Jun 2026 • 15:12 WIB
 ```
 
+## Backend API
+
+A read-only Express API serves the same SQLite database the bot writes to.
+Start it with `npm run api` (port from `API_PORT`, default `3000`), or run it
+alongside the bot via `ENABLE_API=1 npm start`. It also serves the static
+website from `public/`.
+
+| Method & path | Description |
+|---------------|-------------|
+| `GET /api/health` | Liveness check |
+| `GET /api/signals?status=&type=&limit=&offset=` | List signals (filtered, paginated). Returns `{ data, pagination }` |
+| `GET /api/signals/:id` | One signal, plus a pre-rendered `formatted` ASCII block |
+| `GET /api/signals/:id/updates` | Status audit log for a signal |
+| `GET /api/stats` | Dashboard aggregates: totals, counts by status/type, win rate, avg profit, best/worst |
+| `GET /api/calendar?month=YYYY-MM` | Per-day signal counts for a month (defaults to current month) |
+
+`status` accepts `RUNNING` / `TP1 HIT` / `DONE`; `type` accepts the short
+forms (`HAKA`/`SNIPER`/`BSJP`/`SWING`). Invalid filters return `400`, unknown
+resources `404`.
+
+Example:
+
+```bash
+curl "http://localhost:3000/api/signals?status=RUNNING&type=BSJP"
+curl "http://localhost:3000/api/stats"
+```
+
 ## Scripts
 
 | Script | Description |
