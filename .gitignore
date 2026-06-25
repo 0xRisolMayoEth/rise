@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Database files
+data/*.sqlite3
+data/*.sqlite
+data/*.db
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

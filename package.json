@@ -1,0 +1,35 @@
+{
+  "name": "rise-signal-system",
+  "version": "0.1.0",
+  "description": "RISE Signal System — stock signal platform integrating Discord, Telegram, and a website with real-time IDX price tracking.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "bot": "node src/discord/bot.js",
+    "deploy-commands": "node src/discord/deploy-commands.js",
+    "migrate": "node src/database/migrate.js",
+    "api": "node src/api/server.js"
+  },
+  "keywords": [
+    "discord",
+    "telegram",
+    "signal",
+    "trading",
+    "idx",
+    "sqlite"
+  ],
+  "author": "RISE",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7"
+  },
+  "optionalDependencies": {
+    "axios": "^1.7.9",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}
