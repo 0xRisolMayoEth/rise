@@ -29,6 +29,11 @@ async function main() {
   if (process.env.ENABLE_API === '1') {
     require('./api/server').start();
   }
+
+  // Price tracker (optional).
+  if (process.env.ENABLE_TRACKER === '1') {
+    require('./tracker/index').main();
+  }
 }
 
 main().catch((err) => {

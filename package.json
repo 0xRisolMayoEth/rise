@@ -9,7 +9,8 @@
     "bot": "node src/discord/bot.js",
     "deploy-commands": "node src/discord/deploy-commands.js",
     "migrate": "node src/database/migrate.js",
-    "api": "node src/api/server.js"
+    "api": "node src/api/server.js",
+    "tracker": "node src/tracker/index.js"
   },
   "keywords": [
     "discord",

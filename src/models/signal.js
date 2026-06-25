@@ -185,6 +185,34 @@ function updateStatus(id, patch) {
   return getSignalById(id);
 }
 
+/**
+ * Update only the tracked metrics (high / profit) without changing status
+ * or writing an audit row. Used by the price tracker to keep the high-water
+ * mark current while a signal is still RUNNING.
+ *
+ * @param {number} id
+ * @param {object} patch
+ * @param {number} [patch.high]
+ * @param {number} [patch.profit_pct]
+ * @returns {object|undefined} the updated row.
+ */
+function updateMetrics(id, patch) {
+  getDb()
+    .prepare(
+      `UPDATE signals SET
+         high = COALESCE(@high, high),
+         profit_pct = COALESCE(@profit_pct, profit_pct),
+         updated_at = datetime('now','localtime')
+       WHERE id = @id`
+    )
+    .run({
+      id,
+      high: patch.high ?? null,
+      profit_pct: patch.profit_pct ?? null,
+    });
+  return getSignalById(id);
+}
+
 module.exports = {
   computeAvg,
   createSignal,
@@ -193,4 +221,5 @@ module.exports = {
   countSignals,
   getSignalUpdates,
   updateStatus,
+  updateMetrics,
 };

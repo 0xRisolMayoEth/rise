@@ -43,7 +43,13 @@ rise/
     ├── api/
     │   └── server.js         # Express read API (scaffold)
     └── tracker/
-        └── tracker.js        # IDX price tracker / cron (scaffold)
+        ├── index.js          # Tracker entrypoint (npm run tracker)
+        ├── tracker.js        # Engine: transitions + high/profit tracking
+        ├── notifier.js       # Broadcast updates to Discord + Telegram
+        └── sources/
+            ├── index.js      # Source selector (mock | idx)
+            ├── mock.js       # Offline random-walk source (dev)
+            └── idx.js        # Live IDX quotes via axios
 ```
 
 ## Getting started
@@ -118,12 +124,37 @@ curl "http://localhost:3000/api/signals?status=RUNNING&type=BSJP"
 curl "http://localhost:3000/api/stats"
 ```
 
+## Price Tracker
+
+A cron job (`npm run tracker`) pulls real-time prices for every `RUNNING`
+signal and, per CLAUDE.md, auto-advances status and tracks performance:
+
+- keeps the **High** water mark and **Profit %** current (profit is computed
+  from the entry **AVG** and the High price);
+- `RUNNING → TP1 HIT` once the price reaches **TP**;
+- `RUNNING → DONE` when a signal exceeds `TRACKER_MAX_AGE_DAYS` (expired);
+- broadcasts every status change to **Discord** (`#signal-feed`, via REST) and
+  **Telegram**.
+
+Price sources are pluggable (`PRICE_SOURCE`):
+
+| Source | Use |
+|--------|-----|
+| `mock` (default) | Offline random-walk quotes — runs with no network/API |
+| `idx` | Live quotes via axios from `IDX_API_URL` (defaults to Yahoo Finance, IDX `.JK` symbols). Adapt `src/tracker/sources/idx.js#parseQuote` for other providers |
+
+```bash
+PRICE_SOURCE=mock npm run tracker            # demo without any external API
+PRICE_SOURCE=idx  TRACKER_CRON="*/2 * * * *" npm run tracker
+```
+
 ## Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm start` | Boot the system (Discord bot; API if `ENABLE_API=1`) |
+| `npm start` | Boot the system (Discord bot; API if `ENABLE_API=1`; tracker if `ENABLE_TRACKER=1`) |
 | `npm run bot` | Start only the Discord bot |
 | `npm run deploy-commands` | Register slash commands with Discord |
 | `npm run migrate` | Apply the SQLite schema |
 | `npm run api` | Start the Express read API |
+| `npm run tracker` | Start the price tracker cron loop |

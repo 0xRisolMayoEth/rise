@@ -38,6 +38,19 @@ const config = {
     port: Number(process.env.API_PORT) || 3000,
   },
 
+  tracker: {
+    // Which price source to use: 'mock' (no network, for dev) or 'idx'.
+    source: process.env.PRICE_SOURCE || 'mock',
+    // Cron schedule for the tracking pass. Default: every minute.
+    cron: process.env.TRACKER_CRON || '* * * * *',
+    // IDX/quote endpoint template; "{ticker}" is replaced per request.
+    idxUrl:
+      process.env.IDX_API_URL ||
+      'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}.JK',
+    // Auto-close RUNNING signals older than this many days (0 = disabled).
+    maxAgeDays: Number(process.env.TRACKER_MAX_AGE_DAYS) || 0,
+  },
+
   // All times across the system use WIB (UTC+7).
   timezone: process.env.TZ || 'Asia/Jakarta',
 };
