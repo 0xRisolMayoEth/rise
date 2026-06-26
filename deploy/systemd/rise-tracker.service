@@ -1,0 +1,16 @@
+[Unit]
+Description=RISE Signal System - price tracker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rise
+WorkingDirectory=/opt/rise
+ExecStart=/usr/bin/node src/tracker/index.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

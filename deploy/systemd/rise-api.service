@@ -1,0 +1,16 @@
+[Unit]
+Description=RISE Signal System - API + website
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rise
+WorkingDirectory=/opt/rise
+ExecStart=/usr/bin/node src/api/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

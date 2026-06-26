@@ -14,6 +14,9 @@ scaffolded and ready to extend.
 ```
 rise/
 ├── CLAUDE.md                 # Project spec / context
+├── DEPLOY.md                 # VPS deployment guide
+├── ecosystem.config.js       # PM2 process definitions (bot/api/tracker)
+├── deploy/                   # nginx + systemd unit examples
 ├── package.json
 ├── .env.example              # Copy to .env and fill in
 ├── public/                   # Website dashboard (single-file, served by the API)
@@ -205,3 +208,16 @@ down platform never blocks the others.
 | `npm run api` | Start the Express read API |
 | `npm run tracker` | Start the price tracker cron loop |
 | `npm run telegram` | Verify Telegram config / send a test message |
+
+## Deployment
+
+Production deploy to a VPS (Ubuntu) runs three processes — `rise-bot`,
+`rise-api`, `rise-tracker` — under **PM2** (`ecosystem.config.js`), sharing one
+SQLite DB and `.env`. The API process also serves the website. See
+[`DEPLOY.md`](./DEPLOY.md) for the full walkthrough (Node setup, `npm ci`,
+`.env`, `deploy-commands`, PM2, optional nginx + HTTPS). A systemd alternative
+lives in `deploy/systemd/`.
+
+```bash
+pm2 start ecosystem.config.js && pm2 save && pm2 startup
+```

@@ -1,0 +1,18 @@
+[Unit]
+Description=RISE Signal System - Discord bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust User/WorkingDirectory to your install (this example uses /opt/rise).
+User=rise
+WorkingDirectory=/opt/rise
+ExecStart=/usr/bin/node src/discord/bot.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+# .env is loaded by the app (dotenv) from WorkingDirectory.
+
+[Install]
+WantedBy=multi-user.target

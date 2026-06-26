@@ -16,8 +16,9 @@ data/*.db
 *.sqlite3-wal
 *.sqlite3-shm
 
-# Logs
-logs/
+# Logs (keep the dir so PM2 can write into it)
+logs/*
+!logs/.gitkeep
 *.log
 npm-debug.log*
 
