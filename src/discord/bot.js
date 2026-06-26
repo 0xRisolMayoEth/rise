@@ -13,11 +13,18 @@ const { Client, GatewayIntentBits, Events, MessageFlags } = require('discord.js'
 const config = require('../config');
 const { getDb } = require('../database/db');
 const { loadCommands } = require('./commands');
+const adminSignals = require('./adminSignals');
 
 function createClient() {
   const client = new Client({
-    // Slash commands only need the Guilds intent.
-    intents: [GatewayIntentBits.Guilds],
+    // Guilds for slash commands; GuildMessages + MessageContent for the admin
+    // text flow (typing `HAKA BBRI`). MessageContent is a privileged intent —
+    // enable it in the Discord Developer Portal.
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
   });
 
   client.commands = loadCommands();
@@ -25,9 +32,33 @@ function createClient() {
   client.once(Events.ClientReady, (c) => {
     console.log(`[bot] Logged in as ${c.user.tag}`);
     console.log(`[bot] Loaded commands: ${[...client.commands.keys()].join(', ')}`);
+    if (config.discord.adminChannelId) {
+      console.log(`[bot] Admin signal channel: ${config.discord.adminChannelId}`);
+    } else {
+      console.warn('[bot] DISCORD_ADMIN_CHANNEL_ID not set — admin text flow disabled.');
+    }
+  });
+
+  // Admin text flow: analysts typing signals in the admin channel.
+  client.on(Events.MessageCreate, async (message) => {
+    try {
+      await adminSignals.handleMessage(message);
+    } catch (err) {
+      console.error('[bot] admin message error:', err);
+    }
   });
 
   client.on(Events.InteractionCreate, async (interaction) => {
+    // Buttons + modals from the admin flow.
+    if (interaction.isButton() || interaction.isModalSubmit()) {
+      try {
+        await adminSignals.handleInteraction(interaction);
+      } catch (err) {
+        console.error('[bot] admin interaction error:', err);
+      }
+      return;
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);

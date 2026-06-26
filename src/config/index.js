@@ -19,6 +19,22 @@ const config = {
     clientId: process.env.DISCORD_CLIENT_ID || '',
     guildId: process.env.DISCORD_GUILD_ID || '',
     signalChannelId: process.env.DISCORD_SIGNAL_CHANNEL_ID || '',
+    // Per-type broadcast channels (keyed by the canonical DB type).
+    channels: {
+      'HAKA PREOPEN': process.env.DISCORD_HAKA_CHANNEL_ID || '',
+      SNIPER: process.env.DISCORD_SNIPER_CHANNEL_ID || '',
+      BSJP: process.env.DISCORD_BSJP_CHANNEL_ID || '',
+      SWING: process.env.DISCORD_SWING_CHANNEL_ID || '',
+    },
+    // Admin text-input flow: the channel analysts type signals in, and the
+    // role allowed to create signals.
+    adminChannelId: process.env.DISCORD_ADMIN_CHANNEL_ID || '',
+    adminRoleId: process.env.DISCORD_ADMIN_ROLE_ID || '',
+  },
+
+  signal: {
+    // Auto take-profit percentage above the average entry (e.g. 3 => +3%).
+    tpPercent: Number(process.env.SIGNAL_TP_PERCENT) || 3,
   },
 
   telegram: {

@@ -26,19 +26,32 @@ function getRest() {
 }
 
 /**
- * Post a message to the configured #signal-feed channel via REST.
+ * Resolve the Discord channel a signal type should be posted to.
+ * Falls back to the generic feed channel when the per-type one is unset.
+ * @param {string} [type]
+ * @returns {string} channel id (may be empty)
+ */
+function channelForType(type) {
+  return (
+    (type && config.discord.channels && config.discord.channels[type]) ||
+    config.discord.signalChannelId ||
+    ''
+  );
+}
+
+/**
+ * Post a message to a Discord channel via REST.
  * No-op when Discord (token or channel) is not configured.
  * @param {string} content
+ * @param {string} [channelId]  Defaults to the generic feed channel.
  */
-async function toDiscordChannel(content) {
+async function toDiscordChannel(content, channelId = config.discord.signalChannelId) {
   const api = getRest();
-  if (!api || !config.discord.signalChannelId) {
+  if (!api || !channelId) {
     console.warn('[notifier] Discord channel not configured — skipping.');
     return;
   }
-  await api.post(Routes.channelMessages(config.discord.signalChannelId), {
-    body: { content },
-  });
+  await api.post(Routes.channelMessages(channelId), { body: { content } });
 }
 
 /**
@@ -64,7 +77,7 @@ async function broadcastSignal(signal, channels = {}) {
   const text = asCodeBlock(formatSignal(signal, when));
 
   const tasks = [];
-  if (discord) tasks.push(['discord', toDiscordChannel(text)]);
+  if (discord) tasks.push(['discord', toDiscordChannel(text, channelForType(signal.type))]);
   if (telegram) tasks.push(['telegram', toTelegram(text)]);
 
   const results = await Promise.allSettled(tasks.map(([, p]) => p));
@@ -80,4 +93,4 @@ async function broadcastSignal(signal, channels = {}) {
   return text;
 }
 
-module.exports = { broadcastSignal, toDiscordChannel, toTelegram };
+module.exports = { broadcastSignal, toDiscordChannel, toTelegram, channelForType };

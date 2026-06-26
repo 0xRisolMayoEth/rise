@@ -103,6 +103,28 @@ The command computes the entry **AVG**, inserts a `RUNNING` signal into SQLite
 └ 24 Jun 2026 • 15:12 WIB
 ```
 
+## Admin signal flow (Discord text)
+
+Analysts create signals by typing in the **admin channel**
+(`DISCORD_ADMIN_CHANNEL_ID`); only members with `DISCORD_ADMIN_ROLE_ID` may do
+so. Each signal is posted to its **per-type channel** and the take-profit is
+auto-computed at **+`SIGNAL_TP_PERCENT`%** (default 3) above the average entry.
+
+| Input | Behaviour | Posts to |
+|-------|-----------|----------|
+| `HAKA BBRI` | Uses the live (open) price as the entry; auto TP +3% | `DISCORD_HAKA_CHANNEL_ID` |
+| `BSJP BBCA` | Asks (buttons): **Harga saat ini** or **Tulis harga sendiri** | `DISCORD_BSJP_CHANNEL_ID` |
+| `SNIPER BMRI` | Requires a manual price (opens a modal) | `DISCORD_SNIPER_CHANNEL_ID` |
+| `SWING ASII` | Requires a manual price (opens a modal) | `DISCORD_SWING_CHANNEL_ID` |
+
+Prices can also be given inline for any type, e.g. `SNIPER BMRI 4200 4150 4100`
+(up to 3 entries). The manual modal also accepts an explicit TP (blank = auto).
+
+> This flow reads message text, so the bot needs the privileged **Message
+> Content** intent (enable it in the Discord Developer Portal). It stays
+> disabled until `DISCORD_ADMIN_CHANNEL_ID` is set. The `/signal` slash command
+> remains available as an alternative with full manual control.
+
 ## Website (dashboard)
 
 A modern "signal terminal" dashboard lives in `public/index.html` as a single
