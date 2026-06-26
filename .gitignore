@@ -4,6 +4,9 @@ node_modules/
 # Environment
 .env
 .env.local
+.env.save
+.env.*
+!.env.example
 
 # Database files
 data/*.sqlite3
