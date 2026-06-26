@@ -25,6 +25,7 @@ const {
 } = require('discord.js');
 const config = require('../config');
 const { resolveType } = require('../utils/signalTypes');
+const { tpPercentLabel } = require('../utils/format');
 const { channelForType } = require('../notifier');
 const { createAndBroadcast, createFromLivePrice } = require('./signalService');
 
@@ -52,7 +53,9 @@ function confirm(signal, tpPercent) {
   const mention = ch ? `<#${ch}>` : '_(channel tipe belum diset)_';
   const entries =
     [signal.entry1, signal.entry2, signal.entry3].filter((v) => v != null).join(' | ') || '-';
-  const tp = tpPercent != null ? `${signal.tp} (+${tpPercent}%)` : `${signal.tp}`;
+  // Always show the TP distance from the entry; for a blank TP this is +3%.
+  const pct = tpPercent != null ? `+${tpPercent}%` : tpPercentLabel(signal);
+  const tp = pct ? `${signal.tp} (${pct})` : `${signal.tp}`;
   return `✅ **${signal.ticker}** · ${signal.type} → ${mention}\nEntry: ${entries} · AVG: ${signal.avg} · TP: ${tp}`;
 }
 
@@ -82,14 +85,15 @@ function manualRow(type, ticker) {
 
 /** The manual-price modal. */
 function priceModal(type, ticker) {
-  const field = (id, label, required) =>
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder()
-        .setCustomId(id)
-        .setLabel(label)
-        .setStyle(TextInputStyle.Short)
-        .setRequired(required)
-    );
+  const field = (id, label, required, placeholder) => {
+    const input = new TextInputBuilder()
+      .setCustomId(id)
+      .setLabel(label)
+      .setStyle(TextInputStyle.Short)
+      .setRequired(required);
+    if (placeholder) input.setPlaceholder(placeholder);
+    return new ActionRowBuilder().addComponents(input);
+  };
   return new ModalBuilder()
     .setCustomId(`sigm|${type}|${ticker}`)
     .setTitle(`${ticker} · ${type}`)
@@ -97,7 +101,7 @@ function priceModal(type, ticker) {
       field('entry1', 'Harga Entry 1', true),
       field('entry2', 'Harga Entry 2 (opsional)', false),
       field('entry3', 'Harga Entry 3 (opsional)', false),
-      field('tp', `TP harga (kosong = auto +${config.signal.tpPercent}%)`, false)
+      field('tp', 'TP harga (opsional)', false, `kosongkan = otomatis +${config.signal.tpPercent}%`)
     );
 }
 

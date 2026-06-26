@@ -15,7 +15,7 @@
 const { REST, Routes } = require('discord.js');
 const config = require('./config');
 const telegramBot = require('./telegram/bot');
-const { formatSignal, asCodeBlock } = require('./utils/format');
+const { formatSignal, formatDone, asCodeBlock } = require('./utils/format');
 
 let rest = null;
 function getRest() {
@@ -79,6 +79,13 @@ async function broadcastSignal(signal, channels = {}) {
   const tasks = [];
   if (discord) tasks.push(['discord', toDiscordChannel(text, channelForType(signal.type))]);
   if (telegram) tasks.push(['telegram', toTelegram(text)]);
+
+  // When a signal is DONE, also announce it in the "information done" channel
+  // with the source (type), entry date, and done date.
+  if (discord && signal.status === 'DONE' && config.discord.doneChannelId) {
+    const doneText = asCodeBlock(formatDone(signal));
+    tasks.push(['done', toDiscordChannel(doneText, config.discord.doneChannelId)]);
+  }
 
   const results = await Promise.allSettled(tasks.map(([, p]) => p));
   results.forEach((r, i) => {

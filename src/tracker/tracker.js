@@ -5,12 +5,13 @@
  *
  * On each pass it pulls a real-time quote for every RUNNING signal and:
  *   - keeps the high-water mark (`high`) and profit % up to date;
- *   - flips RUNNING -> TP1 HIT once the price reaches TP;
+ *   - flips RUNNING -> DONE once the price reaches TP (the +N% target);
  *   - optionally flips RUNNING -> DONE when a signal exceeds maxAgeDays
  *     (expired), per CLAUDE.md.
  * Profit % is computed from the entry AVG and the High price.
  *
- * Every status change is broadcast to Discord + Telegram via the notifier.
+ * Every status change is broadcast to Discord + Telegram via the notifier;
+ * DONE signals are also announced in the "information done" channel.
  * Dependencies (price source + notifier) are injected so the engine is easy
  * to test in isolation.
  */
@@ -55,13 +56,13 @@ function processSignal(s, quote, maxAgeDays) {
   const high = Math.max(s.high ?? 0, quote.high ?? 0, quote.last ?? 0);
   const profit = computeProfit(base, high);
 
-  // TP reached -> TP1 HIT.
+  // TP reached (price hit +N% target) -> DONE.
   if ((quote.last >= s.tp || high >= s.tp) && s.tp) {
     return updateStatus(s.id, {
-      status: 'TP1 HIT',
+      status: 'DONE',
       high,
       profit_pct: profit,
-      note: `Auto TP1 HIT @ ${quote.last} (TP ${s.tp})`,
+      note: `Auto DONE — target tercapai @ ${quote.last} (TP ${s.tp})`,
     });
   }
 

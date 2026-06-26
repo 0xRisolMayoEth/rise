@@ -30,6 +30,8 @@ const config = {
     // role allowed to create signals.
     adminChannelId: process.env.DISCORD_ADMIN_CHANNEL_ID || '',
     adminRoleId: process.env.DISCORD_ADMIN_ROLE_ID || '',
+    // "Information done" channel — DONE announcements are posted here.
+    doneChannelId: process.env.DISCORD_DONE_CHANNEL_ID || '',
   },
 
   signal: {

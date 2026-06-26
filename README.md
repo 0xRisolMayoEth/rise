@@ -118,7 +118,13 @@ auto-computed at **+`SIGNAL_TP_PERCENT`%** (default 3) above the average entry.
 | `SWING ASII` | Requires a manual price (opens a modal) | `DISCORD_SWING_CHANNEL_ID` |
 
 Prices can also be given inline for any type, e.g. `SNIPER BMRI 4200 4150 4100`
-(up to 3 entries). The manual modal also accepts an explicit TP (blank = auto).
+(up to 3 entries). The manual modal accepts an explicit TP; **leaving TP blank
+sets it to +`SIGNAL_TP_PERCENT`% (default +3%) above the entry**, and the
+confirmation shows the TP with its percentage.
+
+When the price later reaches that target, the tracker marks the signal **DONE**
+and posts an announcement to the `DISCORD_DONE_CHANNEL_ID` channel including the
+**source** (signal type), the **entry date**, and the **done date**.
 
 > This flow reads message text, so the bot needs the privileged **Message
 > Content** intent (enable it in the Discord Developer Portal). It stays
@@ -192,10 +198,11 @@ signal and, per CLAUDE.md, auto-advances status and tracks performance:
 
 - keeps the **High** water mark and **Profit %** current (profit is computed
   from the entry **AVG** and the High price);
-- `RUNNING → TP1 HIT` once the price reaches **TP**;
+- `RUNNING → DONE` once the price reaches **TP** (the +N% target);
 - `RUNNING → DONE` when a signal exceeds `TRACKER_MAX_AGE_DAYS` (expired);
-- broadcasts every status change to **Discord** (`#signal-feed`, via REST) and
-  **Telegram**.
+- broadcasts every status change to the type's Discord channel (via REST) and
+  **Telegram**, and posts a **DONE announcement** — source (type), entry date,
+  and done date — to the `DISCORD_DONE_CHANNEL_ID` "information done" channel.
 
 Price sources are pluggable (`PRICE_SOURCE`):
 
