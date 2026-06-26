@@ -16,10 +16,8 @@ rise/
 ├── CLAUDE.md                 # Project spec / context
 ├── package.json
 ├── .env.example              # Copy to .env and fill in
-├── public/                   # Website dashboard (vanilla, served by the API)
-│   ├── index.html
-│   ├── css/styles.css
-│   └── js/{app,api,format}.js
+├── public/                   # Website dashboard (single-file, served by the API)
+│   └── index.html            # self-contained: inline CSS + JS
 ├── data/                     # SQLite file lives here (gitignored)
 └── src/
     ├── index.js              # Main entrypoint (npm start)
@@ -104,22 +102,20 @@ The command computes the entry **AVG**, inserts a `RUNNING` signal into SQLite
 
 ## Website (dashboard)
 
-A dark-mode, mobile-first dashboard built in **vanilla HTML/CSS/JS** (no build
-step) lives in `public/` and is served by the API itself. Open
-`http://localhost:3000/` after `npm run api`. Views:
+A dark-mode, mobile-first dashboard lives in `public/index.html` as a single
+self-contained file (inline CSS + JS, no build step) and is served by the API
+itself. Open `http://localhost:3000/` after `npm run api`. It provides:
 
-- **Dashboard** — stat cards (total / running / win rate / avg profit), summary
-  per type, and a live preview of RUNNING signals.
-- **Live Signals** — RUNNING signals as ASCII cards, filterable by type.
-- **History** — table of `TP1 HIT` / `DONE` signals with colour-coded profit.
-- **Statistics** — diverging profit bars, a status-distribution donut, and
-  best/worst signal cards.
-- **Calendar** — month grid with per-day signal counts.
-
-Signal cards reuse the exact ASCII layout (`public/js/format.js` mirrors the
-server formatter), and status colours follow the spec — RUNNING green, TP1 HIT
-amber, DONE blue. The pages call the JSON API below; a status dot in the top bar
-reflects API health.
+- **Header** with the RISE logo, a live API-health dot, the last-updated time
+  (WIB), and a manual refresh button.
+- **Summary stats** — Total Signal, Win Rate, and Avg Profit (computed
+  client-side from the signal list).
+- **Signal table** — Ticker, Tipe, Entry, TP, Status, Tanggal — with
+  colour-coded status badges (RUNNING green / TP1 HIT amber / DONE blue).
+- **Status filter** — chips for Semua / RUNNING / TP1 HIT / DONE, each with a
+  live count.
+- **Auto-refresh** every 30s from `GET /api/signals` (paused while the tab is
+  hidden, and triggered immediately when it regains focus).
 
 ## Backend API
 

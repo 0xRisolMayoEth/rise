@@ -4,38 +4,454 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <title>RISE Signal System</title>
+    <title>RISE Signal System — Dashboard</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='monospace' font-size='18' font-weight='700' fill='%233fb950'%3ER%3C/text%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --bg-2: #0d1117;
+        --surface: #161b22;
+        --surface-2: #1c222b;
+        --border: #2a313c;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --running: #3fb950; /* green */
+        --tp1: #d29922;     /* amber */
+        --done: #58a6ff;    /* blue  */
+        --danger: #f85149;
+        --radius: 12px;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background:
+          radial-gradient(1200px 600px at 80% -10%, rgba(63, 185, 80, 0.06), transparent 60%),
+          radial-gradient(900px 500px at -10% 0%, rgba(88, 166, 255, 0.06), transparent 55%),
+          var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+      .muted { color: var(--muted); }
+
+      /* ── Header ──────────────────────────────────────────── */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 0.85rem 1.25rem;
+        background: rgba(11, 14, 20, 0.85);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+      }
+      .brand { display: flex; align-items: center; gap: 0.7rem; }
+      .mark {
+        width: 38px; height: 38px; border-radius: 10px; flex: none;
+        display: grid; place-items: center;
+        background: linear-gradient(135deg, #11321f, #0d1117);
+        border: 1px solid var(--border);
+        font-family: var(--mono); font-weight: 800; color: var(--running);
+        font-size: 1.1rem; letter-spacing: 0.04em;
+      }
+      .brand .title { font-family: var(--mono); font-weight: 700; letter-spacing: 0.22em; font-size: 1.1rem; }
+      .brand .sub { color: var(--muted); font-size: 0.8rem; margin-top: 1px; }
+
+      .head-right { margin-left: auto; display: flex; align-items: center; gap: 0.9rem; }
+      .updated { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; }
+      .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+      .live-dot.ok { background: var(--running); box-shadow: 0 0 0 0 rgba(63,185,80,0.5); animation: pulse 2s infinite; }
+      .live-dot.down { background: var(--danger); }
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(63,185,80,0.45); }
+        70% { box-shadow: 0 0 0 7px rgba(63,185,80,0); }
+        100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); }
+      }
+      .btn {
+        cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+        color: var(--text); border-radius: 9px; padding: 0.4rem 0.7rem; font-size: 0.82rem;
+        display: inline-flex; align-items: center; gap: 0.4rem;
+      }
+      .btn:hover { background: var(--surface-2); }
+      .btn.spinning svg { animation: spin 0.8s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ── Layout ──────────────────────────────────────────── */
+      .wrap { max-width: 1120px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+
+      /* ── Stat cards ──────────────────────────────────────── */
+      .stats { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      .stat {
+        position: relative;
+        background: linear-gradient(180deg, var(--surface), var(--bg-2));
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.1rem 1.2rem;
+        overflow: hidden;
+      }
+      .stat::before {
+        content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent, var(--muted));
+      }
+      .stat .label { color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; gap: 0.45rem; }
+      .stat .value { font-size: 1.9rem; font-weight: 750; margin-top: 0.4rem; font-variant-numeric: tabular-nums; }
+      .stat .hint { font-size: 0.74rem; color: var(--muted); margin-top: 0.15rem; }
+      .stat.acc-total { --accent: var(--done); }
+      .stat.acc-win   { --accent: var(--running); }
+      .stat.acc-prof  { --accent: var(--tp1); }
+      .pos { color: var(--running); }
+      .neg { color: var(--danger); }
+
+      /* ── Toolbar / filters ───────────────────────────────── */
+      .toolbar {
+        display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+        margin: 1.75rem 0 1rem;
+      }
+      .toolbar h2 { font-size: 1rem; margin: 0; }
+      .filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-left: auto; }
+      .chip {
+        cursor: pointer; user-select: none;
+        padding: 0.4rem 0.8rem; border-radius: 999px;
+        border: 1px solid var(--border); background: var(--surface);
+        color: var(--muted); font-size: 0.83rem; display: inline-flex; align-items: center; gap: 0.4rem;
+      }
+      .chip:hover { color: var(--text); }
+      .chip.active { color: var(--text); border-color: var(--text); background: var(--surface-2); }
+      .chip .swatch { width: 8px; height: 8px; border-radius: 50%; }
+      .chip .count { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
+
+      /* ── Table ───────────────────────────────────────────── */
+      .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+      .table-scroll { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+      thead th {
+        text-align: left; color: var(--muted); font-weight: 600; font-size: 0.78rem;
+        text-transform: uppercase; letter-spacing: 0.05em;
+        padding: 0.75rem 1rem; background: var(--bg-2); border-bottom: 1px solid var(--border); white-space: nowrap;
+      }
+      tbody td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle; }
+      tbody tr:last-child td { border-bottom: none; }
+      tbody tr:hover { background: var(--surface); }
+      .ticker { font-family: var(--mono); font-weight: 700; letter-spacing: 0.02em; }
+      .type-tag {
+        font-size: 0.72rem; color: var(--muted); border: 1px solid var(--border);
+        border-radius: 6px; padding: 0.12rem 0.4rem; font-weight: 600;
+      }
+      .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+      .entries { color: var(--text); }
+      .entries .dim { color: var(--muted); }
+
+      .badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em;
+        padding: 0.2rem 0.55rem; border-radius: 999px; border: 1px solid currentColor;
+      }
+      .badge .swatch { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+      .b-running { color: var(--running); }
+      .b-tp1 { color: var(--tp1); }
+      .b-done { color: var(--done); }
+
+      .state { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
+      .state.error { color: var(--danger); }
+
+      .footer {
+        max-width: 1120px; margin: 0 auto; padding: 1rem 1.25rem;
+        display: flex; justify-content: space-between; gap: 1rem;
+        color: var(--muted); font-size: 0.78rem; border-top: 1px solid var(--border);
+      }
+      @media (max-width: 560px) {
+        .brand .sub { display: none; }
+        .toolbar h2 { width: 100%; }
+        .filters { margin-left: 0; }
+        .footer { flex-direction: column; gap: 0.25rem; }
+      }
+    </style>
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
-        <span class="logo">RISE</span>
-        <span class="tagline">Signal System</span>
+        <div class="mark">R</div>
+        <div>
+          <div class="title">RISE</div>
+          <div class="sub">Signal System</div>
+        </div>
       </div>
-      <nav class="tabs" id="tabs">
-        <a href="#/dashboard" data-view="dashboard">Dashboard</a>
-        <a href="#/live" data-view="live">Live Signals</a>
-        <a href="#/history" data-view="history">History</a>
-        <a href="#/stats" data-view="stats">Statistics</a>
-        <a href="#/calendar" data-view="calendar">Calendar</a>
-      </nav>
-      <div class="status-dot" id="conn" title="API status"></div>
+      <div class="head-right">
+        <span class="updated">
+          <span class="live-dot" id="liveDot"></span>
+          <span id="updatedAt">Memuat…</span>
+        </span>
+        <button class="btn" id="refreshBtn" title="Refresh sekarang">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6M1 20v-6h6" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+          Refresh
+        </button>
+      </div>
     </header>
 
-    <main id="app" class="app">
-      <div class="loading">Memuat…</div>
+    <main class="wrap">
+      <!-- Summary stats -->
+      <section class="stats" id="stats">
+        <div class="stat acc-total">
+          <div class="label">Total Signal</div>
+          <div class="value" id="statTotal">—</div>
+          <div class="hint" id="statTotalHint">&nbsp;</div>
+        </div>
+        <div class="stat acc-win">
+          <div class="label">Win Rate</div>
+          <div class="value" id="statWin">—</div>
+          <div class="hint" id="statWinHint">&nbsp;</div>
+        </div>
+        <div class="stat acc-prof">
+          <div class="label">Avg Profit</div>
+          <div class="value" id="statProfit">—</div>
+          <div class="hint" id="statProfitHint">&nbsp;</div>
+        </div>
+      </section>
+
+      <!-- Toolbar + filters -->
+      <div class="toolbar">
+        <h2>Daftar Signal</h2>
+        <div class="filters" id="filters"></div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Tipe</th>
+                <th>Entry</th>
+                <th>TP</th>
+                <th>Status</th>
+                <th>Tanggal</th>
+              </tr>
+            </thead>
+            <tbody id="rows">
+              <tr><td colspan="6"><div class="state">Memuat data…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </main>
 
     <footer class="footer">
-      <span>RISE Signal System</span>
-      <span class="muted">Semua waktu WIB (UTC+7)</span>
+      <span>RISE Signal System · data dari <code>GET /api/signals</code></span>
+      <span class="muted">Auto-refresh 30s · Semua waktu WIB (UTC+7)</span>
     </footer>
 
-    <script type="module" src="/js/app.js"></script>
+    <script>
+      'use strict';
+
+      const REFRESH_MS = 30000;
+      const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+      // Status metadata: DB value -> { label, badge class, swatch color }.
+      const STATUS = {
+        RUNNING:   { label: 'RUNNING',  cls: 'b-running', color: '#3fb950' },
+        'TP1 HIT': { label: 'TP1 HIT',  cls: 'b-tp1',     color: '#d29922' },
+        DONE:      { label: 'DONE',     cls: 'b-done',    color: '#58a6ff' },
+      };
+      const FILTERS = ['ALL', 'RUNNING', 'TP1 HIT', 'DONE'];
+
+      let state = { signals: [], total: 0, filter: 'ALL', loading: false };
+      let timer = null;
+
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) =>
+        String(s ?? '').replace(/[&<>"']/g, (c) =>
+          ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
+        );
+
+      function fmtNum(v) {
+        if (v === null || v === undefined || v === '') return null;
+        const n = Number(v);
+        return Number.isFinite(n) ? String(n) : null;
+      }
+
+      function fmtEntries(s) {
+        return [s.entry1, s.entry2, s.entry3]
+          .map((v) => {
+            const n = fmtNum(v);
+            return n === null ? '<span class="dim">-</span>' : esc(n);
+          })
+          .join(' <span class="dim">|</span> ');
+      }
+
+      function fmtDate(str) {
+        if (!str) return '—';
+        const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(str);
+        if (!m) return esc(str);
+        const [, y, mo, d, h, mi] = m;
+        return `${Number(d)} ${MONTHS[Number(mo) - 1]} ${y} • ${h}:${mi}`;
+      }
+
+      function fmtPct(v) {
+        if (v === null || v === undefined) return '—';
+        const n = Number(v);
+        return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+      }
+
+      // ── Stats (computed client-side from the fetched signals) ──
+      function computeStats(signals, total) {
+        const closed = signals.filter((s) => s.status !== 'RUNNING');
+        const wins = closed.filter((s) => s.profit_pct != null && Number(s.profit_pct) >= 0);
+        const withProfit = closed.filter((s) => s.profit_pct != null);
+        const avg = withProfit.length
+          ? withProfit.reduce((a, s) => a + Number(s.profit_pct), 0) / withProfit.length
+          : null;
+        return {
+          total,
+          running: signals.filter((s) => s.status === 'RUNNING').length,
+          closed: closed.length,
+          winRate: closed.length ? (wins.length / closed.length) * 100 : null,
+          wins: wins.length,
+          avgProfit: avg,
+        };
+      }
+
+      function renderStats() {
+        const st = computeStats(state.signals, state.total);
+
+        $('statTotal').textContent = st.total;
+        $('statTotalHint').textContent = `${st.running} running · ${st.closed} closed`;
+
+        $('statWin').textContent = st.winRate === null ? '—' : `${st.winRate.toFixed(1)}%`;
+        $('statWin').className = 'value' + (st.winRate === null ? '' : st.winRate >= 50 ? ' pos' : ' neg');
+        $('statWinHint').textContent = st.closed ? `${st.wins} dari ${st.closed} closed` : 'belum ada closed';
+
+        $('statProfit').textContent = st.avgProfit === null ? '—' : fmtPct(st.avgProfit);
+        $('statProfit').className = 'value' + (st.avgProfit === null ? '' : st.avgProfit >= 0 ? ' pos' : ' neg');
+        $('statProfitHint').textContent = st.avgProfit === null ? 'belum ada data profit' : 'rata-rata signal closed';
+      }
+
+      // ── Filters ──
+      function renderFilters() {
+        const counts = state.signals.reduce((acc, s) => {
+          acc[s.status] = (acc[s.status] || 0) + 1;
+          return acc;
+        }, {});
+        $('filters').innerHTML = FILTERS.map((f) => {
+          const meta = STATUS[f];
+          const n = f === 'ALL' ? state.signals.length : counts[f] || 0;
+          const sw = meta ? `<span class="swatch" style="background:${meta.color}"></span>` : '';
+          const label = f === 'ALL' ? 'Semua' : meta.label;
+          return `<span class="chip ${state.filter === f ? 'active' : ''}" data-filter="${f}">
+            ${sw}${label}<span class="count">${n}</span></span>`;
+        }).join('');
+
+        $('filters').querySelectorAll('.chip').forEach((c) =>
+          c.addEventListener('click', () => {
+            state.filter = c.dataset.filter;
+            renderFilters();
+            renderRows();
+          })
+        );
+      }
+
+      // ── Table rows ──
+      function renderRows() {
+        const list =
+          state.filter === 'ALL'
+            ? state.signals
+            : state.signals.filter((s) => s.status === state.filter);
+
+        if (!list.length) {
+          $('rows').innerHTML = `<tr><td colspan="6"><div class="state">
+            Tidak ada signal${state.filter === 'ALL' ? '' : ` dengan status ${esc(state.filter)}`}.
+          </div></td></tr>`;
+          return;
+        }
+
+        $('rows').innerHTML = list
+          .map((s) => {
+            const meta = STATUS[s.status] || { label: s.status, cls: '', color: 'var(--muted)' };
+            return `<tr>
+              <td><span class="ticker">${esc(s.ticker)}</span></td>
+              <td><span class="type-tag">${esc(s.type)}</span></td>
+              <td class="mono entries">${fmtEntries(s)}</td>
+              <td class="mono">${esc(fmtNum(s.tp) ?? '—')}</td>
+              <td><span class="badge ${meta.cls}"><span class="swatch"></span>${esc(meta.label)}</span></td>
+              <td class="mono muted">${fmtDate(s.created_at)}</td>
+            </tr>`;
+          })
+          .join('');
+      }
+
+      function setLive(ok) {
+        const dot = $('liveDot');
+        dot.classList.toggle('ok', ok);
+        dot.classList.toggle('down', !ok);
+      }
+
+      function setUpdated(date) {
+        const wib = new Date(date.getTime() + 7 * 3600 * 1000);
+        const hh = String(wib.getUTCHours()).padStart(2, '0');
+        const mm = String(wib.getUTCMinutes()).padStart(2, '0');
+        const ss = String(wib.getUTCSeconds()).padStart(2, '0');
+        $('updatedAt').textContent = `Diperbarui ${hh}:${mm}:${ss} WIB`;
+      }
+
+      // ── Data fetch ──
+      async function load() {
+        if (state.loading) return;
+        state.loading = true;
+        $('refreshBtn').classList.add('spinning');
+        try {
+          const res = await fetch('/api/signals?limit=200', { headers: { Accept: 'application/json' } });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const body = await res.json();
+          state.signals = Array.isArray(body.data) ? body.data : [];
+          state.total = body.pagination?.total ?? state.signals.length;
+
+          renderStats();
+          renderFilters();
+          renderRows();
+          setLive(true);
+          setUpdated(new Date());
+        } catch (err) {
+          setLive(false);
+          $('updatedAt').textContent = 'Gagal memuat';
+          if (!state.signals.length) {
+            $('rows').innerHTML = `<tr><td colspan="6"><div class="state error">
+              Gagal mengambil data dari API: ${esc(err.message)}.<br />
+              Pastikan server berjalan (<code>npm run api</code>).
+            </div></td></tr>`;
+          }
+        } finally {
+          state.loading = false;
+          $('refreshBtn').classList.remove('spinning');
+        }
+      }
+
+      function startAutoRefresh() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(() => {
+          if (!document.hidden) load();
+        }, REFRESH_MS);
+      }
+
+      // Refresh immediately when the tab becomes visible again.
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) load();
+      });
+      $('refreshBtn').addEventListener('click', load);
+
+      load();
+      startAutoRefresh();
+    </script>
   </body>
 </html>
