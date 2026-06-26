@@ -27,8 +27,10 @@ rise/
     │   ├── schema.sql        # Tables: signals, signal_updates, users, settings
     │   ├── db.js             # Shared better-sqlite3 connection
     │   └── migrate.js        # npm run migrate
+    ├── notifier.js           # Shared multi-platform broadcaster
     ├── models/
-    │   └── signal.js         # create / list / update signals
+    │   ├── signal.js         # create / list / update signals
+    │   └── stats.js          # dashboard / calendar aggregates
     ├── utils/
     │   ├── format.js         # ASCII signal formatter (WIB time)
     │   └── signalTypes.js    # Type mapping + slash-command choices
@@ -39,13 +41,14 @@ rise/
     │       ├── index.js      # Command loader
     │       └── signal.js     # /signal command
     ├── telegram/
-    │   └── bot.js            # Notification broadcaster (scaffold)
+    │   ├── bot.js            # Send-only client + broadcast/verify
+    │   └── index.js          # Connectivity check / test send (npm run telegram)
     ├── api/
-    │   └── server.js         # Express read API (scaffold)
+    │   ├── server.js         # Express read API (npm run api)
+    │   └── routes/           # signals + stats/calendar routes
     └── tracker/
         ├── index.js          # Tracker entrypoint (npm run tracker)
         ├── tracker.js        # Engine: transitions + high/profit tracking
-        ├── notifier.js       # Broadcast updates to Discord + Telegram
         └── sources/
             ├── index.js      # Source selector (mock | idx)
             ├── mock.js       # Offline random-walk source (dev)
@@ -148,6 +151,32 @@ PRICE_SOURCE=mock npm run tracker            # demo without any external API
 PRICE_SOURCE=idx  TRACKER_CRON="*/2 * * * *" npm run tracker
 ```
 
+## Telegram (notifications)
+
+Telegram is **notification-only** — it never accepts input, it just mirrors the
+formatted signal blocks to the channel (e.g. `@signal_alerts`). Notifications
+are pushed by the shared broadcaster (`src/notifier.js`), so there is no
+long-running Telegram process; you only need a bot token and the target chat.
+
+```bash
+# Set TELEGRAM_TOKEN and TELEGRAM_CHAT_ID in .env, then:
+npm run telegram                 # verify the token and print the bot identity
+npm run telegram -- "test ping"  # send a test message to the channel
+```
+
+### All-platform broadcast
+
+A single signal reaches every platform through `src/notifier.js`:
+
+- **NEW SIGNAL** — when `/signal` runs, Discord gets the command reply; Telegram
+  is notified too (and the dedicated `#signal-feed` channel as well, if
+  `DISCORD_SIGNAL_CHANNEL_ID` points somewhere other than where the command ran).
+- **TP1 HIT / DONE** — the price tracker pushes status changes to the Discord
+  feed channel (via REST) and Telegram.
+
+Each channel is best-effort and fails independently, so a misconfigured or
+down platform never blocks the others.
+
 ## Scripts
 
 | Script | Description |
@@ -158,3 +187,4 @@ PRICE_SOURCE=idx  TRACKER_CRON="*/2 * * * *" npm run tracker
 | `npm run migrate` | Apply the SQLite schema |
 | `npm run api` | Start the Express read API |
 | `npm run tracker` | Start the price tracker cron loop |
+| `npm run telegram` | Verify Telegram config / send a test message |

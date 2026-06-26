@@ -10,7 +10,8 @@
     "deploy-commands": "node src/discord/deploy-commands.js",
     "migrate": "node src/database/migrate.js",
     "api": "node src/api/server.js",
-    "tracker": "node src/tracker/index.js"
+    "tracker": "node src/tracker/index.js",
+    "telegram": "node src/telegram/index.js"
   },
   "keywords": [
     "discord",

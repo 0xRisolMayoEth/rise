@@ -15,14 +15,15 @@
 const config = require('../config');
 const { getDb } = require('../database/db');
 const { getSource } = require('./sources');
-const { broadcastUpdate } = require('./notifier');
+const { broadcastSignal } = require('../notifier');
 const { start, runOnce } = require('./tracker');
 
 function buildDeps() {
   const source = getSource();
   return {
     fetchPrice: source.fetchPrice,
-    notify: broadcastUpdate,
+    // Status changes go to the Discord feed channel (REST) + Telegram.
+    notify: (signal) => broadcastSignal(signal, { discord: true, telegram: true }),
   };
 }
 

@@ -1,8 +1,10 @@
 'use strict';
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
+const config = require('../../config');
 const { createSignal } = require('../../models/signal');
 const { resolveType, TYPE_CHOICES } = require('../../utils/signalTypes');
 const { formatSignal, asCodeBlock } = require('../../utils/format');
+const { broadcastSignal } = require('../../notifier');
 
 function parsePrice(raw, label) {
   if (raw === null || raw === undefined) return { value: null };
@@ -79,7 +81,19 @@ async function execute(interaction) {
     });
   }
   const block = asCodeBlock(formatSignal(signal, new Date(signal.created_at)));
-  return interaction.reply({ content: block });
+  await interaction.reply({ content: block });
+
+  // Fan out NEW SIGNAL to the other platforms. The reply above already posts
+  // to this Discord channel, so only re-post to the feed channel when it's a
+  // different one. Telegram always gets it. Best-effort — never blocks the reply.
+  const feedElsewhere =
+    Boolean(config.discord.signalChannelId) &&
+    config.discord.signalChannelId !== interaction.channelId;
+  broadcastSignal(signal, { discord: feedElsewhere, telegram: true }).catch((e) =>
+    console.error('[signal] broadcast failed:', e.message)
+  );
+
+  return undefined;
 }
 
 module.exports = { data, execute };

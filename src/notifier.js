@@ -1,0 +1,83 @@
+'use strict';
+
+/**
+ * Shared multi-platform broadcaster.
+ *
+ * One place that renders a signal into the canonical ASCII block and pushes it
+ * to the configured platforms. Used by:
+ *   - the /signal command (NEW SIGNAL — Telegram fan-out; Discord is covered by
+ *     the interaction reply, or the feed channel when it differs);
+ *   - the price tracker (status changes — Discord feed via REST + Telegram).
+ *
+ * Discord posts use the REST API so callers don't need a live gateway client.
+ * Each channel fails independently and never blocks the others.
+ */
+const { REST, Routes } = require('discord.js');
+const config = require('./config');
+const telegramBot = require('./telegram/bot');
+const { formatSignal, asCodeBlock } = require('./utils/format');
+
+let rest = null;
+function getRest() {
+  if (rest) return rest;
+  if (!config.discord.token) return null;
+  rest = new REST({ version: '10' }).setToken(config.discord.token);
+  return rest;
+}
+
+/**
+ * Post a message to the configured #signal-feed channel via REST.
+ * No-op when Discord (token or channel) is not configured.
+ * @param {string} content
+ */
+async function toDiscordChannel(content) {
+  const api = getRest();
+  if (!api || !config.discord.signalChannelId) {
+    console.warn('[notifier] Discord channel not configured — skipping.');
+    return;
+  }
+  await api.post(Routes.channelMessages(config.discord.signalChannelId), {
+    body: { content },
+  });
+}
+
+/**
+ * Send a message to the Telegram channel. No-op when not configured.
+ * @param {string} content
+ */
+async function toTelegram(content) {
+  return telegramBot.broadcast(content);
+}
+
+/**
+ * Render a signal and broadcast it to the selected platforms.
+ *
+ * @param {object} signal                       A signal row.
+ * @param {object} [channels]
+ * @param {boolean} [channels.discord=true]     Post to the Discord feed channel.
+ * @param {boolean} [channels.telegram=true]    Post to Telegram.
+ * @returns {Promise<string>} the rendered text block.
+ */
+async function broadcastSignal(signal, channels = {}) {
+  const { discord = true, telegram = true } = channels;
+  const when = new Date(signal.updated_at || signal.created_at || Date.now());
+  const text = asCodeBlock(formatSignal(signal, when));
+
+  const tasks = [];
+  if (discord) tasks.push(['discord', toDiscordChannel(text)]);
+  if (telegram) tasks.push(['telegram', toTelegram(text)]);
+
+  const results = await Promise.allSettled(tasks.map(([, p]) => p));
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      console.error(
+        `[notifier] ${tasks[i][0]} failed:`,
+        r.reason?.message || r.reason
+      );
+    }
+  });
+
+  return text;
+}
+
+module.exports = { broadcastSignal, toDiscordChannel, toTelegram };
