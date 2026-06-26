@@ -295,12 +295,12 @@
                 <option value="SWING">SWING</option>
               </select>
             </label>
-            <!-- period selector (recap view) -->
-            <div class="seg hidden" id="periodSeg">
-              <button data-period="today" class="active">Hari Ini</button>
+            <!-- period selector (both views) -->
+            <div class="seg" id="periodSeg">
+              <button data-period="today">Hari Ini</button>
               <button data-period="week">Minggu Ini</button>
               <button data-period="month">Bulan Ini</button>
-              <button data-period="all">Semua</button>
+              <button data-period="all" class="active">Semua</button>
             </div>
           </div>
 
@@ -359,7 +359,7 @@
       const TYPES = ['HAKA PREOPEN','SNIPER','BSJP','SWING'];
       const TYPE_COLOR = { 'HAKA PREOPEN': '#a78bfa', SNIPER: '#22d3ee', BSJP: '#34d399', SWING: '#fbbf24' };
 
-      const state = { signals: [], view: 'dashboard', period: 'today',
+      const state = { signals: [], scope: [], view: 'dashboard', period: 'all',
         filter: { q: '', status: 'ALL', type: 'ALL' }, collapsed: {}, loading: false };
       let timer = null;
 
@@ -398,7 +398,7 @@
           winRate: wp.length ? (wins / wp.length) * 100 : null, wins, wp: wp.length, avg };
       }
       function typeWinRate(type) {
-        const all = state.signals.filter((s) => s.type === type);
+        const all = state.scope.filter((s) => s.type === type);
         const wp = all.filter((s) => !isRunning(s) && num(s.profit_pct) !== null);
         const wins = wp.filter((s) => Number(s.profit_pct) >= 0).length;
         return { count: all.length, rate: wp.length ? (wins / wp.length) * 100 : null };
@@ -434,7 +434,7 @@
       }
 
       function renderDonut() {
-        const st = statsOf(state.signals);
+        const st = statsOf(state.scope);
         const parts = [['Running', st.running, 'var(--running)', '#f04452'], ['Done', st.done, 'var(--done)', '#34d399']];
         const total = st.total || 1; const r = 52, c = 2 * Math.PI * r; let off = 0;
         const segs = parts.filter((p) => p[1] > 0).map(([, n, , col]) => {
@@ -454,7 +454,7 @@
       }
 
       function renderSpark() {
-        const closed = state.signals.filter((s) => num(s.profit_pct) !== null)
+        const closed = state.scope.filter((s) => num(s.profit_pct) !== null)
           .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
         if (!closed.length) { $('spark').innerHTML = '<div class="state">Belum ada data profit.</div>'; return; }
         const vals = closed.map((s) => Number(s.profit_pct));
@@ -513,8 +513,7 @@
       // ── filtering ──
       function visible() {
         const { q, status, type } = state.filter;
-        return state.signals.filter((s) => {
-          if (state.view === 'recap' && !inPeriod(s.created_at, state.period)) return false;
+        return state.scope.filter((s) => {
           if (status === 'RUNNING' && !isRunning(s)) return false;
           if (status === 'DONE' && isRunning(s)) return false;
           if (type !== 'ALL' && s.type !== type) return false;
@@ -555,7 +554,6 @@
       function applyView() {
         const recap = state.view === 'recap';
         $('dashOnly').classList.toggle('hidden', recap);
-        $('periodSeg').classList.toggle('hidden', !recap);
         $('pageTitle').textContent = recap ? 'Recap' : 'Dashboard';
         $('pageSub').textContent = recap ? 'Rekap performa signal per periode' : 'Realtime trading community signals';
         $('listTitle').textContent = recap ? 'Signal Periode Ini' : 'Daftar Signal';
@@ -564,8 +562,9 @@
 
       function renderAll() {
         applyView();
-        const kpiList = state.view === 'recap' ? state.signals.filter((s) => inPeriod(s.created_at, state.period)) : state.signals;
-        renderKpis(kpiList);
+        // Period scopes everything (KPIs, analytics, list) on both views.
+        state.scope = state.signals.filter((s) => inPeriod(s.created_at, state.period));
+        renderKpis(state.scope);
         renderTypes(); renderDonut(); renderSpark();
         renderGroups();
       }
