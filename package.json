@@ -9,6 +9,7 @@
     "bot": "node src/discord/bot.js",
     "deploy-commands": "node src/discord/deploy-commands.js",
     "migrate": "node src/database/migrate.js",
+    "seed": "node src/database/seed.js",
     "api": "node src/api/server.js",
     "tracker": "node src/tracker/index.js",
     "telegram": "node src/telegram/index.js"

@@ -105,25 +105,36 @@ The command computes the entry **AVG**, inserts a `RUNNING` signal into SQLite
 
 ## Website (dashboard)
 
-A modern black-and-gold dashboard lives in `public/index.html` as a single
+A modern "signal terminal" dashboard lives in `public/index.html` as a single
 self-contained file (inline CSS + JS, no build step) and is served by the API
-itself. Open `http://localhost:3000/` after `npm run api`. It provides:
+itself. Open `http://localhost:3000/` after `npm run api`. Dark slate theme with
+an emerald/cyan accent and a left **sidebar** layout. It provides:
 
-- **Header** with the RISE logo, Dashboard / History Recap views, a live
-  API-health dot, last-updated time (WIB), and a refresh button.
+- **Sidebar** with the RISE logo, Dashboard / Recap views, and a live API-health
+  indicator; a top bar with last-updated time (WIB) and a refresh button.
+- **KPI strip** — Total / Running / Done / Win Rate / Avg Profit (status is
+  presented as just **Running** and **Done**).
 - **IHSG Live Market** — embedded TradingView chart of the IDX Composite
   (`IDX:COMPOSITE`); degrades to a placeholder without internet.
-- **Summary stats** — Total / Running / TP1 Hit / Done / Win Rate / Avg Profit,
-  each colour-accented.
-- **Win Rate per Tipe** and an **Analytics** row: a Signal-Status donut and a
+- **Win Rate per Tipe** and an **Analytics** row: a Running-vs-Done donut and a
   Profit-Performance sparkline.
-- **Signal cards** grouped by type (collapsible sections) — gold ticker, status
-  pill + left accent bar (RUNNING green / TP1 HIT amber / DONE blue), entry/AVG/
-  TP/High, a progress-to-TP bar, and colour-coded profit.
-- **Controls** — search emiten, status filter, and type filter.
-- **History Recap** view — closed signals only (hides the chart/analytics).
+- **Signal cards** with a monogram avatar, a circular **profit/progress ring**
+  (green profit for Done, blue progress-to-TP for Running), entry/AVG/TP/High,
+  and a status pill — grouped by type (collapsible) on the dashboard.
+- **Recap** view — a period selector (**Hari Ini / Minggu Ini / Bulan Ini /
+  Semua**) recomputes the KPIs and lists the signals for that period.
+- **Controls** — search emiten, status filter (Running/Done), and type filter.
 - **Auto-refresh** every 30s from `GET /api/signals` (paused while the tab is
   hidden, and triggered immediately when it regains focus).
+
+### Sample data
+
+Populate the database with fictitious sample signals for a demo:
+
+```bash
+npm run seed             # append ~25 sample signals (spread across periods)
+npm run seed -- --reset  # clear signals first, then seed
+```
 
 ## Backend API
 
@@ -210,6 +221,7 @@ down platform never blocks the others.
 | `npm run bot` | Start only the Discord bot |
 | `npm run deploy-commands` | Register slash commands with Discord |
 | `npm run migrate` | Apply the SQLite schema |
+| `npm run seed` | Insert fictitious sample signals (`-- --reset` to clear first) |
 | `npm run api` | Start the Express read API |
 | `npm run tracker` | Start the price tracker cron loop |
 | `npm run telegram` | Verify Telegram config / send a test message |
