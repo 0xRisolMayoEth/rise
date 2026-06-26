@@ -16,8 +16,10 @@ rise/
 ├── CLAUDE.md                 # Project spec / context
 ├── package.json
 ├── .env.example              # Copy to .env and fill in
-├── public/                   # Website (placeholder)
-│   └── index.html
+├── public/                   # Website dashboard (vanilla, served by the API)
+│   ├── index.html
+│   ├── css/styles.css
+│   └── js/{app,api,format}.js
 ├── data/                     # SQLite file lives here (gitignored)
 └── src/
     ├── index.js              # Main entrypoint (npm start)
@@ -99,6 +101,25 @@ The command computes the entry **AVG**, inserts a `RUNNING` signal into SQLite
 ├ Status : RUNNING
 └ 24 Jun 2026 • 15:12 WIB
 ```
+
+## Website (dashboard)
+
+A dark-mode, mobile-first dashboard built in **vanilla HTML/CSS/JS** (no build
+step) lives in `public/` and is served by the API itself. Open
+`http://localhost:3000/` after `npm run api`. Views:
+
+- **Dashboard** — stat cards (total / running / win rate / avg profit), summary
+  per type, and a live preview of RUNNING signals.
+- **Live Signals** — RUNNING signals as ASCII cards, filterable by type.
+- **History** — table of `TP1 HIT` / `DONE` signals with colour-coded profit.
+- **Statistics** — diverging profit bars, a status-distribution donut, and
+  best/worst signal cards.
+- **Calendar** — month grid with per-day signal counts.
+
+Signal cards reuse the exact ASCII layout (`public/js/format.js` mirrors the
+server formatter), and status colours follow the spec — RUNNING green, TP1 HIT
+amber, DONE blue. The pages call the JSON API below; a status dot in the top bar
+reflects API health.
 
 ## Backend API
 
