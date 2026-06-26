@@ -26,7 +26,7 @@
         --amber: #fbbf24;
         --rose: #fb7185;
         /* status: only RUNNING + DONE */
-        --running: #38bdf8; /* sky — active/live */
+        --running: #f04452; /* red — active/live */
         --done: #34d399;    /* emerald — completed */
         --r: 14px;
         --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -181,10 +181,6 @@
       .sig.s-done { --accent: var(--done); }
 
       .sig .hd { display: flex; align-items: center; gap: 0.8rem; }
-      .av { width: 44px; height: 44px; border-radius: 12px; flex: none; display: grid; place-items: center;
-        font-family: var(--mono); font-weight: 800; font-size: 0.9rem; color: var(--tc);
-        background: color-mix(in srgb, var(--tc) 16%, transparent);
-        border: 1px solid color-mix(in srgb, var(--tc) 35%, transparent); }
       .sig .id { min-width: 0; flex: 1; }
       .sig .tk { font-size: 1.2rem; font-weight: 820; letter-spacing: 0.01em; }
       .sig .ty { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
@@ -439,7 +435,7 @@
 
       function renderDonut() {
         const st = statsOf(state.signals);
-        const parts = [['Running', st.running, 'var(--running)', '#38bdf8'], ['Done', st.done, 'var(--done)', '#34d399']];
+        const parts = [['Running', st.running, 'var(--running)', '#f04452'], ['Done', st.done, 'var(--done)', '#34d399']];
         const total = st.total || 1; const r = 52, c = 2 * Math.PI * r; let off = 0;
         const segs = parts.filter((p) => p[1] > 0).map(([, n, , col]) => {
           const frac = n / total;
@@ -494,13 +490,10 @@
         const accent = running ? 'var(--running)' : 'var(--done)';
         const prof = num(s.profit_pct);
         const pct = progressPct(s);
-        const ringColor = running ? '#38bdf8' : (prof !== null && prof < 0 ? '#fb7185' : '#34d399');
+        const ringColor = running ? '#f04452' : (prof !== null && prof < 0 ? '#fb7185' : '#34d399');
         const ringText = running ? Math.round(pct) + '%' : (prof === null ? '—' : (prof >= 0 ? '+' : '') + prof.toFixed(1));
-        const tc = TYPE_COLOR[s.type] || 'var(--emerald)';
-        const av = esc(String(s.ticker).slice(0, 2).toUpperCase());
         return `<article class="sig ${running ? 's-running' : 's-done'}">
           <div class="hd">
-            <div class="av" style="--tc:${tc}">${av}</div>
             <div class="id"><div class="tk">${esc(s.ticker)}</div><div class="ty">${esc(s.type)} · ${fmtDate(s.created_at)}</div></div>
             ${ring(running ? pct : Math.max(8, pct), ringColor, ringText)}
           </div>
