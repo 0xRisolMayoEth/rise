@@ -4,173 +4,279 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <title>RISE Signal System — Dashboard</title>
+    <title>RISE Dashboard — Signal System</title>
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='monospace' font-size='18' font-weight='700' fill='%233fb950'%3ER%3C/text%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23090a0d'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='monospace' font-size='17' font-weight='800' fill='%23ffce3a'%3ER%3C/text%3E%3C/svg%3E"
     />
     <style>
       :root {
-        --bg: #0b0e14;
-        --bg-2: #0d1117;
-        --surface: #161b22;
-        --surface-2: #1c222b;
-        --border: #2a313c;
-        --text: #e6edf3;
-        --muted: #8b949e;
-        --running: #3fb950; /* green */
-        --tp1: #d29922;     /* amber */
-        --done: #58a6ff;    /* blue  */
-        --danger: #f85149;
-        --radius: 12px;
+        --bg: #07080b;
+        --bg-soft: #0b0d11;
+        --surface: #0e1116;
+        --surface-2: #131722;
+        --border: #1c2230;
+        --border-soft: #161b25;
+        --text: #eef2f7;
+        --muted: #8a93a6;
+        --gold: #ffce3a;
+        --gold-deep: #f5b400;
+        --running: #3fb950; /* green  */
+        --tp1: #e3a008;     /* amber  */
+        --done: #58a6ff;    /* blue   */
+        --violet: #a371f7;
+        --danger: #ff5d5d;
+        --r: 16px;
         --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-        --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; }
       body {
         background:
-          radial-gradient(1200px 600px at 80% -10%, rgba(63, 185, 80, 0.06), transparent 60%),
-          radial-gradient(900px 500px at -10% 0%, rgba(88, 166, 255, 0.06), transparent 55%),
+          radial-gradient(900px 500px at 100% -5%, rgba(255, 206, 58, 0.07), transparent 55%),
+          radial-gradient(800px 500px at -10% 0%, rgba(88, 166, 255, 0.05), transparent 55%),
           var(--bg);
         color: var(--text);
         font-family: var(--sans);
         -webkit-font-smoothing: antialiased;
         min-height: 100vh;
       }
+      a { color: inherit; text-decoration: none; }
       .muted { color: var(--muted); }
+      ::selection { background: rgba(255, 206, 58, 0.25); }
 
-      /* ── Header ──────────────────────────────────────────── */
+      /* ── Top bar ─────────────────────────────────────────── */
       .topbar {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        flex-wrap: wrap;
-        padding: 0.85rem 1.25rem;
-        background: rgba(11, 14, 20, 0.85);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 30;
+        display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+        padding: 0.8rem 1.5rem;
+        background: rgba(7, 8, 11, 0.82);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-soft);
       }
       .brand { display: flex; align-items: center; gap: 0.7rem; }
-      .mark {
-        width: 38px; height: 38px; border-radius: 10px; flex: none;
+      .brand .ring {
+        width: 40px; height: 40px; border-radius: 50%; flex: none;
         display: grid; place-items: center;
-        background: linear-gradient(135deg, #11321f, #0d1117);
-        border: 1px solid var(--border);
-        font-family: var(--mono); font-weight: 800; color: var(--running);
-        font-size: 1.1rem; letter-spacing: 0.04em;
+        background: radial-gradient(circle at 30% 30%, #1a1c12, #0a0b0d);
+        border: 1.5px solid var(--gold-deep);
+        box-shadow: 0 0 18px rgba(255, 206, 58, 0.18);
+        font-family: var(--mono); font-weight: 800; color: var(--gold); font-size: 1rem;
       }
-      .brand .title { font-family: var(--mono); font-weight: 700; letter-spacing: 0.22em; font-size: 1.1rem; }
-      .brand .sub { color: var(--muted); font-size: 0.8rem; margin-top: 1px; }
+      .brand .name { font-weight: 800; letter-spacing: 0.04em; font-size: 1.05rem; color: var(--gold); }
+      .brand .sub { font-size: 0.72rem; color: var(--muted); margin-top: -2px; }
 
-      .head-right { margin-left: auto; display: flex; align-items: center; gap: 0.9rem; }
-      .updated { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; }
-      .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-      .live-dot.ok { background: var(--running); box-shadow: 0 0 0 0 rgba(63,185,80,0.5); animation: pulse 2s infinite; }
-      .live-dot.down { background: var(--danger); }
+      .nav { display: flex; gap: 0.3rem; margin-left: 0.5rem; }
+      .nav button {
+        cursor: pointer; border: 1px solid transparent; background: transparent;
+        color: var(--muted); font-size: 0.86rem; font-weight: 600;
+        padding: 0.45rem 0.85rem; border-radius: 10px; font-family: inherit;
+      }
+      .nav button:hover { color: var(--text); background: var(--surface); }
+      .nav button.active {
+        color: #1a1300; background: linear-gradient(180deg, var(--gold), var(--gold-deep));
+        border-color: var(--gold-deep);
+      }
+
+      .top-right { margin-left: auto; display: flex; align-items: center; gap: 0.9rem; }
+      .live { display: flex; align-items: center; gap: 0.45rem; font-size: 0.76rem; color: var(--muted); }
+      .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+      .live .dot.ok { background: var(--running); animation: pulse 2s infinite; }
+      .live .dot.down { background: var(--danger); }
       @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(63,185,80,0.45); }
+        0% { box-shadow: 0 0 0 0 rgba(63,185,80,0.5); }
         70% { box-shadow: 0 0 0 7px rgba(63,185,80,0); }
         100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); }
       }
-      .btn {
-        cursor: pointer; border: 1px solid var(--border); background: var(--surface);
-        color: var(--text); border-radius: 9px; padding: 0.4rem 0.7rem; font-size: 0.82rem;
-        display: inline-flex; align-items: center; gap: 0.4rem;
+      .icon-btn {
+        cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px;
+        border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 10px;
       }
-      .btn:hover { background: var(--surface-2); }
-      .btn.spinning svg { animation: spin 0.8s linear infinite; }
+      .icon-btn:hover { background: var(--surface-2); }
+      .icon-btn.spinning svg { animation: spin .8s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
 
       /* ── Layout ──────────────────────────────────────────── */
-      .wrap { max-width: 1120px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+      .wrap { max-width: 1240px; margin: 0 auto; padding: 1.75rem 1.5rem 4rem; }
+
+      /* ── Hero ────────────────────────────────────────────── */
+      .hero h1 {
+        margin: 0; font-size: clamp(2rem, 5vw, 3rem); font-weight: 850; line-height: 1.02;
+        letter-spacing: -0.02em;
+        background: linear-gradient(180deg, #fff 10%, var(--gold) 130%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .hero p { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; }
+
+      /* ── Controls ────────────────────────────────────────── */
+      .controls { display: flex; gap: 0.7rem; flex-wrap: wrap; margin: 1.5rem 0 0.5rem; }
+      .field {
+        position: relative; display: flex; align-items: center; gap: 0.5rem;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+        padding: 0 0.85rem; height: 44px;
+      }
+      .field:focus-within { border-color: var(--gold-deep); box-shadow: 0 0 0 3px rgba(255,206,58,0.12); }
+      .field svg { color: var(--muted); flex: none; }
+      .field input, .field select {
+        background: transparent; border: none; outline: none; color: var(--text);
+        font-family: inherit; font-size: 0.9rem; height: 100%; min-width: 0;
+      }
+      .field.search { flex: 1 1 240px; }
+      .field.search input { width: 100%; }
+      .field.sel { cursor: pointer; }
+      .field select { cursor: pointer; padding-right: 0.5rem; }
+      .field select option { background: var(--surface-2); color: var(--text); }
+
+      /* ── Section heading ─────────────────────────────────── */
+      .sec-title { display: flex; align-items: baseline; gap: 0.6rem; margin: 2.25rem 0 0.9rem; }
+      .sec-title h2 { margin: 0; font-size: 1.05rem; font-weight: 750; }
+      .sec-title .accent { color: var(--gold); }
+      .sec-title .hint { color: var(--muted); font-size: 0.82rem; }
+
+      /* ── Panel ───────────────────────────────────────────── */
+      .panel {
+        background: linear-gradient(165deg, var(--surface), var(--bg-soft));
+        border: 1px solid var(--border); border-radius: var(--r); padding: 1.1rem 1.2rem;
+      }
+      .panel .ph { display: flex; flex-direction: column; gap: 0.1rem; margin-bottom: 0.9rem; }
+      .panel .ph .t { font-weight: 750; color: var(--gold); font-size: 0.98rem; }
+      .panel .ph .s { color: var(--muted); font-size: 0.78rem; }
+
+      /* IHSG chart */
+      .tv { position: relative; height: 360px; border-radius: 12px; overflow: hidden; background: var(--bg-soft); }
+      .tv .fallback {
+        position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
+        font-size: 0.85rem; text-align: center; padding: 1rem; z-index: 0;
+      }
+      .tv .tradingview-widget-container { position: relative; z-index: 1; height: 100%; }
 
       /* ── Stat cards ──────────────────────────────────────── */
-      .stats { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      .stats { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
       .stat {
-        position: relative;
-        background: linear-gradient(180deg, var(--surface), var(--bg-2));
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1.1rem 1.2rem;
-        overflow: hidden;
+        position: relative; overflow: hidden;
+        background: linear-gradient(165deg, var(--surface), var(--bg-soft));
+        border: 1px solid var(--border); border-radius: var(--r); padding: 1.05rem 1.15rem;
       }
-      .stat::before {
-        content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent, var(--muted));
+      .stat::after {
+        content: ""; position: absolute; right: -40px; top: -40px; width: 110px; height: 110px;
+        border-radius: 50%; background: var(--c, var(--gold)); opacity: 0.10; filter: blur(6px);
       }
-      .stat .label { color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; gap: 0.45rem; }
-      .stat .value { font-size: 1.9rem; font-weight: 750; margin-top: 0.4rem; font-variant-numeric: tabular-nums; }
-      .stat .hint { font-size: 0.74rem; color: var(--muted); margin-top: 0.15rem; }
-      .stat.acc-total { --accent: var(--done); }
-      .stat.acc-win   { --accent: var(--running); }
-      .stat.acc-prof  { --accent: var(--tp1); }
+      .stat .l { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+      .stat .v { font-size: 1.8rem; font-weight: 820; margin-top: 0.35rem; color: var(--c, var(--text)); font-variant-numeric: tabular-nums; }
+      .stat .h { font-size: 0.74rem; color: var(--muted); margin-top: 0.1rem; }
+
+      /* ── Type win-rate cards ─────────────────────────────── */
+      .types { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+      .type-card {
+        background: linear-gradient(165deg, var(--surface), var(--bg-soft));
+        border: 1px solid var(--border); border-radius: var(--r); padding: 1.05rem 1.15rem;
+        transition: border-color .2s, transform .2s;
+      }
+      .type-card:hover { border-color: rgba(255,206,58,0.35); transform: translateY(-2px); }
+      .type-card .tn { font-size: 0.78rem; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; }
+      .type-card .tr { font-size: 1.7rem; font-weight: 820; color: var(--gold); margin-top: 0.2rem; }
+      .type-card .tc { font-size: 0.74rem; color: var(--muted); margin-top: 0.15rem; }
+      .type-card .tbar { height: 5px; border-radius: 99px; background: var(--surface-2); margin-top: 0.7rem; overflow: hidden; }
+      .type-card .tbar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); }
+
+      /* ── Analytics row ───────────────────────────────────── */
+      .analytics { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+      @media (min-width: 860px) { .analytics { grid-template-columns: 1fr 1.25fr; } }
+      .donut-wrap { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
+      .legend { display: flex; flex-direction: column; gap: 0.55rem; }
+      .legend .row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.86rem; }
+      .legend .sw { width: 11px; height: 11px; border-radius: 4px; }
+      .spark { width: 100%; height: 200px; }
+
+      /* ── Signal sections (grouped by type) ───────────────── */
+      .group { margin-top: 1.5rem; }
+      .group-head {
+        display: flex; align-items: center; gap: 0.75rem; cursor: pointer; user-select: none;
+        padding: 0.6rem 0.25rem; border-bottom: 1px solid var(--border-soft);
+      }
+      .group-head .gt { font-size: 1rem; font-weight: 800; letter-spacing: 0.02em; }
+      .group-head .gc { font-size: 0.76rem; color: var(--muted); }
+      .group-head .gr { margin-left: auto; font-size: 0.8rem; color: var(--gold); font-weight: 700; }
+      .group-head .chev { color: var(--muted); transition: transform .2s; }
+      .group.collapsed .chev { transform: rotate(-90deg); }
+      .group.collapsed .cards { display: none; }
+
+      .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); margin-top: 1rem; }
+
+      /* ── Signal card (the star) ──────────────────────────── */
+      .card {
+        position: relative; overflow: hidden;
+        background:
+          linear-gradient(165deg, rgba(255,255,255,0.015), transparent 40%),
+          linear-gradient(180deg, var(--surface), var(--bg-soft));
+        border: 1px solid var(--border); border-radius: 18px; padding: 1.1rem 1.15rem 1rem;
+        transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+      }
+      .card::before {
+        content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+        background: var(--accent, var(--muted));
+      }
+      .card.s-running { --accent: var(--running); }
+      .card.s-tp1 { --accent: var(--tp1); }
+      .card.s-done { --accent: var(--done); }
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+        box-shadow: 0 14px 34px -18px var(--accent), 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+      .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+      .card .tk { font-size: 1.55rem; font-weight: 850; letter-spacing: 0.01em; color: var(--gold); line-height: 1; }
+      .card .ty { font-size: 0.72rem; color: var(--muted); margin-top: 0.35rem; font-weight: 600; letter-spacing: 0.05em; }
+      .pill {
+        display: inline-flex; align-items: center; gap: 0.4rem; flex: none;
+        font-size: 0.7rem; font-weight: 800; letter-spacing: 0.04em;
+        padding: 0.3rem 0.6rem; border-radius: 999px;
+        color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+      }
+      .pill .sw { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+      .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 0.9rem; margin: 1rem 0 0.5rem; }
+      .kv .k { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+      .kv .v { font-family: var(--mono); font-size: 0.92rem; font-weight: 600; margin-top: 1px; font-variant-numeric: tabular-nums; }
+      .kv .v .dim { color: var(--muted); }
+      .kv .full { grid-column: 1 / -1; }
+
+      .prog { margin-top: 0.75rem; }
+      .prog-track { height: 7px; border-radius: 99px; background: var(--surface-2); overflow: hidden; position: relative; }
+      .prog-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px;
+        background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, transparent), var(--accent)); }
+      .prog-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 0.45rem; font-size: 0.8rem; }
+      .prog-meta .lab { color: var(--muted); }
+      .prof { font-family: var(--mono); font-weight: 700; }
       .pos { color: var(--running); }
       .neg { color: var(--danger); }
 
-      /* ── Toolbar / filters ───────────────────────────────── */
-      .toolbar {
-        display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
-        margin: 1.75rem 0 1rem;
+      .card-foot {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+        margin-top: 0.9rem; padding-top: 0.7rem; border-top: 1px solid var(--border-soft);
+        font-size: 0.72rem; color: var(--muted);
       }
-      .toolbar h2 { font-size: 1rem; margin: 0; }
-      .filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-left: auto; }
-      .chip {
-        cursor: pointer; user-select: none;
-        padding: 0.4rem 0.8rem; border-radius: 999px;
-        border: 1px solid var(--border); background: var(--surface);
-        color: var(--muted); font-size: 0.83rem; display: inline-flex; align-items: center; gap: 0.4rem;
-      }
-      .chip:hover { color: var(--text); }
-      .chip.active { color: var(--text); border-color: var(--text); background: var(--surface-2); }
-      .chip .swatch { width: 8px; height: 8px; border-radius: 50%; }
-      .chip .count { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
 
-      /* ── Table ───────────────────────────────────────────── */
-      .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-      .table-scroll { overflow-x: auto; }
-      table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-      thead th {
-        text-align: left; color: var(--muted); font-weight: 600; font-size: 0.78rem;
-        text-transform: uppercase; letter-spacing: 0.05em;
-        padding: 0.75rem 1rem; background: var(--bg-2); border-bottom: 1px solid var(--border); white-space: nowrap;
-      }
-      tbody td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle; }
-      tbody tr:last-child td { border-bottom: none; }
-      tbody tr:hover { background: var(--surface); }
-      .ticker { font-family: var(--mono); font-weight: 700; letter-spacing: 0.02em; }
-      .type-tag {
-        font-size: 0.72rem; color: var(--muted); border: 1px solid var(--border);
-        border-radius: 6px; padding: 0.12rem 0.4rem; font-weight: 600;
-      }
-      .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-      .entries { color: var(--text); }
-      .entries .dim { color: var(--muted); }
-
-      .badge {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em;
-        padding: 0.2rem 0.55rem; border-radius: 999px; border: 1px solid currentColor;
-      }
-      .badge .swatch { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-      .b-running { color: var(--running); }
-      .b-tp1 { color: var(--tp1); }
-      .b-done { color: var(--done); }
-
-      .state { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
+      /* states */
+      .state { padding: 3rem 1rem; text-align: center; color: var(--muted); }
       .state.error { color: var(--danger); }
+      .skeleton { border-radius: 18px; height: 230px; border: 1px solid var(--border);
+        background: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%);
+        background-size: 200% 100%; animation: sk 1.3s infinite; }
+      @keyframes sk { to { background-position: -200% 0; } }
 
       .footer {
-        max-width: 1120px; margin: 0 auto; padding: 1rem 1.25rem;
-        display: flex; justify-content: space-between; gap: 1rem;
-        color: var(--muted); font-size: 0.78rem; border-top: 1px solid var(--border);
+        max-width: 1240px; margin: 0 auto; padding: 1.25rem 1.5rem;
+        display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+        color: var(--muted); font-size: 0.76rem; border-top: 1px solid var(--border-soft);
       }
-      @media (max-width: 560px) {
+      .footer code { color: var(--gold); }
+
+      @media (max-width: 600px) {
         .brand .sub { display: none; }
-        .toolbar h2 { width: 100%; }
-        .filters { margin-left: 0; }
+        .nav { margin-left: 0; order: 3; width: 100%; }
         .footer { flex-direction: column; gap: 0.25rem; }
       }
     </style>
@@ -178,79 +284,126 @@
   <body>
     <header class="topbar">
       <div class="brand">
-        <div class="mark">R</div>
+        <div class="ring">R</div>
         <div>
-          <div class="title">RISE</div>
+          <div class="name">RISE</div>
           <div class="sub">Signal System</div>
         </div>
       </div>
-      <div class="head-right">
-        <span class="updated">
-          <span class="live-dot" id="liveDot"></span>
-          <span id="updatedAt">Memuat…</span>
-        </span>
-        <button class="btn" id="refreshBtn" title="Refresh sekarang">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      <nav class="nav" id="nav">
+        <button data-view="dashboard" class="active">Dashboard</button>
+        <button data-view="history">History Recap</button>
+      </nav>
+      <div class="top-right">
+        <span class="live"><span class="dot" id="liveDot"></span><span id="updatedAt">Memuat…</span></span>
+        <button class="icon-btn" id="refreshBtn" title="Refresh">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
             <path d="M23 4v6h-6M1 20v-6h6" />
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
           </svg>
-          Refresh
         </button>
       </div>
     </header>
 
     <main class="wrap">
-      <!-- Summary stats -->
-      <section class="stats" id="stats">
-        <div class="stat acc-total">
-          <div class="label">Total Signal</div>
-          <div class="value" id="statTotal">—</div>
-          <div class="hint" id="statTotalHint">&nbsp;</div>
-        </div>
-        <div class="stat acc-win">
-          <div class="label">Win Rate</div>
-          <div class="value" id="statWin">—</div>
-          <div class="hint" id="statWinHint">&nbsp;</div>
-        </div>
-        <div class="stat acc-prof">
-          <div class="label">Avg Profit</div>
-          <div class="value" id="statProfit">—</div>
-          <div class="hint" id="statProfitHint">&nbsp;</div>
+      <section class="hero">
+        <h1 id="heroTitle">RISE Dashboard</h1>
+        <p id="heroSub">Realtime Trading Community Dashboard</p>
+      </section>
+
+      <!-- Controls -->
+      <div class="controls">
+        <label class="field search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="search" type="text" placeholder="Cari emiten…" autocomplete="off" />
+        </label>
+        <label class="field sel">
+          <select id="fStatus">
+            <option value="ALL">Semua Status</option>
+            <option value="RUNNING">Running</option>
+            <option value="TP1 HIT">TP1 Hit</option>
+            <option value="DONE">Done</option>
+          </select>
+        </label>
+        <label class="field sel">
+          <select id="fType">
+            <option value="ALL">Semua Tipe</option>
+            <option value="HAKA PREOPEN">HAKA PREOPEN</option>
+            <option value="SNIPER">SNIPER</option>
+            <option value="BSJP">BSJP</option>
+            <option value="SWING">SWING</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- IHSG chart (dashboard only) -->
+      <section id="chartSec">
+        <div class="sec-title"><h2><span class="accent">IHSG</span> Live Market</h2><span class="hint">Realtime IDX Composite</span></div>
+        <div class="panel">
+          <div class="tv">
+            <div class="fallback">Memuat grafik IHSG… (butuh koneksi internet)</div>
+            <div class="tradingview-widget-container">
+              <div class="tradingview-widget-container__widget"></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+              {
+                "autosize": true,
+                "symbol": "IDX:COMPOSITE",
+                "interval": "D",
+                "timezone": "Asia/Jakarta",
+                "theme": "dark",
+                "style": "1",
+                "locale": "id",
+                "hide_side_toolbar": true,
+                "allow_symbol_change": false,
+                "backgroundColor": "rgba(11, 13, 17, 1)",
+                "gridColor": "rgba(28, 34, 48, 0.5)",
+                "support_host": "https://www.tradingview.com"
+              }
+              </script>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Toolbar + filters -->
-      <div class="toolbar">
-        <h2>Daftar Signal</h2>
-        <div class="filters" id="filters"></div>
-      </div>
+      <!-- Summary stats -->
+      <div class="sec-title" id="overviewTitle"><h2>Overview</h2><span class="hint" id="overviewHint"></span></div>
+      <section class="stats" id="stats"></section>
 
-      <!-- Table -->
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Ticker</th>
-                <th>Tipe</th>
-                <th>Entry</th>
-                <th>TP</th>
-                <th>Status</th>
-                <th>Tanggal</th>
-              </tr>
-            </thead>
-            <tbody id="rows">
-              <tr><td colspan="6"><div class="state">Memuat data…</div></td></tr>
-            </tbody>
-          </table>
+      <!-- Type win-rate -->
+      <section id="typesSec">
+        <div class="sec-title"><h2>Win Rate per <span class="accent">Tipe</span></h2></div>
+        <div class="types" id="types"></div>
+      </section>
+
+      <!-- Analytics -->
+      <section id="analyticsSec">
+        <div class="sec-title"><h2>Analytics</h2></div>
+        <div class="analytics">
+          <div class="panel">
+            <div class="ph"><span class="t">Signal Status</span><span class="s">Running · TP1 Hit · Done</span></div>
+            <div class="donut-wrap" id="donut"></div>
+          </div>
+          <div class="panel">
+            <div class="ph"><span class="t">Profit Performance</span><span class="s">Profit per signal closed</span></div>
+            <div id="spark"></div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Signals -->
+      <div class="sec-title"><h2 id="listTitle">Daftar Signal</h2><span class="hint" id="listHint"></span></div>
+      <section id="groups">
+        <div class="cards">
+          <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer">
       <span>RISE Signal System · data dari <code>GET /api/signals</code></span>
-      <span class="muted">Auto-refresh 30s · Semua waktu WIB (UTC+7)</span>
+      <span>Auto-refresh 30s · Semua waktu WIB (UTC+7)</span>
     </footer>
 
     <script>
@@ -258,200 +411,282 @@
 
       const REFRESH_MS = 30000;
       const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-
-      // Status metadata: DB value -> { label, badge class, swatch color }.
+      const TYPES = ['HAKA PREOPEN','SNIPER','BSJP','SWING'];
       const STATUS = {
-        RUNNING:   { label: 'RUNNING',  cls: 'b-running', color: '#3fb950' },
-        'TP1 HIT': { label: 'TP1 HIT',  cls: 'b-tp1',     color: '#d29922' },
-        DONE:      { label: 'DONE',     cls: 'b-done',    color: '#58a6ff' },
+        RUNNING:   { label: 'RUNNING', cls: 's-running', color: '#3fb950' },
+        'TP1 HIT': { label: 'TP1 HIT', cls: 's-tp1',     color: '#e3a008' },
+        DONE:      { label: 'DONE',    cls: 's-done',    color: '#58a6ff' },
       };
-      const FILTERS = ['ALL', 'RUNNING', 'TP1 HIT', 'DONE'];
 
-      let state = { signals: [], total: 0, filter: 'ALL', loading: false };
+      const state = { signals: [], total: 0, view: 'dashboard',
+        filter: { q: '', status: 'ALL', type: 'ALL' }, collapsed: {}, loading: false };
       let timer = null;
 
       const $ = (id) => document.getElementById(id);
-      const esc = (s) =>
-        String(s ?? '').replace(/[&<>"']/g, (c) =>
-          ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
-        );
-
-      function fmtNum(v) {
-        if (v === null || v === undefined || v === '') return null;
-        const n = Number(v);
-        return Number.isFinite(n) ? String(n) : null;
-      }
-
-      function fmtEntries(s) {
-        return [s.entry1, s.entry2, s.entry3]
-          .map((v) => {
-            const n = fmtNum(v);
-            return n === null ? '<span class="dim">-</span>' : esc(n);
-          })
-          .join(' <span class="dim">|</span> ');
-      }
+      const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      const num = (v) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
+      const dash = (v) => { const n = num(v); return n === null ? '<span class="dim">-</span>' : esc(String(n)); };
 
       function fmtDate(str) {
         if (!str) return '—';
-        const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(str);
+        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(str);
         if (!m) return esc(str);
-        const [, y, mo, d, h, mi] = m;
-        return `${Number(d)} ${MONTHS[Number(mo) - 1]} ${y} • ${h}:${mi}`;
+        const [, y, mo, d] = m;
+        return `${Number(d)} ${MONTHS[Number(mo) - 1]} ${y}`;
       }
+      function fmtPct(v) { const n = num(v); return n === null ? '—' : `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`; }
 
-      function fmtPct(v) {
-        if (v === null || v === undefined) return '—';
-        const n = Number(v);
-        return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-      }
-
-      // ── Stats (computed client-side from the fetched signals) ──
-      function computeStats(signals, total) {
-        const closed = signals.filter((s) => s.status !== 'RUNNING');
-        const wins = closed.filter((s) => s.profit_pct != null && Number(s.profit_pct) >= 0);
-        const withProfit = closed.filter((s) => s.profit_pct != null);
-        const avg = withProfit.length
-          ? withProfit.reduce((a, s) => a + Number(s.profit_pct), 0) / withProfit.length
-          : null;
+      // ── stats ──
+      function statsOf(list) {
+        const by = (s) => list.filter((x) => x.status === s).length;
+        const closed = list.filter((x) => x.status !== 'RUNNING');
+        const wins = closed.filter((x) => num(x.profit_pct) !== null && num(x.profit_pct) >= 0);
+        const wp = closed.filter((x) => num(x.profit_pct) !== null);
+        const avg = wp.length ? wp.reduce((a, x) => a + Number(x.profit_pct), 0) / wp.length : null;
         return {
-          total,
-          running: signals.filter((s) => s.status === 'RUNNING').length,
-          closed: closed.length,
+          total: list.length, running: by('RUNNING'), tp1: by('TP1 HIT'), done: by('DONE'),
+          closed: closed.length, wins: wins.length,
           winRate: closed.length ? (wins.length / closed.length) * 100 : null,
-          wins: wins.length,
           avgProfit: avg,
         };
       }
-
-      function renderStats() {
-        const st = computeStats(state.signals, state.total);
-
-        $('statTotal').textContent = st.total;
-        $('statTotalHint').textContent = `${st.running} running · ${st.closed} closed`;
-
-        $('statWin').textContent = st.winRate === null ? '—' : `${st.winRate.toFixed(1)}%`;
-        $('statWin').className = 'value' + (st.winRate === null ? '' : st.winRate >= 50 ? ' pos' : ' neg');
-        $('statWinHint').textContent = st.closed ? `${st.wins} dari ${st.closed} closed` : 'belum ada closed';
-
-        $('statProfit').textContent = st.avgProfit === null ? '—' : fmtPct(st.avgProfit);
-        $('statProfit').className = 'value' + (st.avgProfit === null ? '' : st.avgProfit >= 0 ? ' pos' : ' neg');
-        $('statProfitHint').textContent = st.avgProfit === null ? 'belum ada data profit' : 'rata-rata signal closed';
+      function typeWinRate(type) {
+        const all = state.signals.filter((s) => s.type === type);
+        const closed = all.filter((s) => s.status !== 'RUNNING');
+        const wins = closed.filter((s) => num(s.profit_pct) !== null && num(s.profit_pct) >= 0);
+        return { count: all.length, rate: closed.length ? (wins.length / closed.length) * 100 : null };
       }
 
-      // ── Filters ──
-      function renderFilters() {
-        const counts = state.signals.reduce((acc, s) => {
-          acc[s.status] = (acc[s.status] || 0) + 1;
-          return acc;
-        }, {});
-        $('filters').innerHTML = FILTERS.map((f) => {
-          const meta = STATUS[f];
-          const n = f === 'ALL' ? state.signals.length : counts[f] || 0;
-          const sw = meta ? `<span class="swatch" style="background:${meta.color}"></span>` : '';
-          const label = f === 'ALL' ? 'Semua' : meta.label;
-          return `<span class="chip ${state.filter === f ? 'active' : ''}" data-filter="${f}">
-            ${sw}${label}<span class="count">${n}</span></span>`;
+      function renderStats() {
+        const st = statsOf(state.signals);
+        const cards = [
+          { l: 'Total Signals', v: st.total, c: 'var(--gold)', h: `${st.closed} closed` },
+          { l: 'Running', v: st.running, c: 'var(--running)', h: 'aktif' },
+          { l: 'TP1 Hit', v: st.tp1, c: 'var(--tp1)', h: 'kena target' },
+          { l: 'Done', v: st.done, c: 'var(--done)', h: 'selesai' },
+          { l: 'Win Rate', v: st.winRate === null ? '—' : st.winRate.toFixed(1) + '%', c: 'var(--violet)', h: st.closed ? `${st.wins}/${st.closed} closed` : 'belum ada' },
+          { l: 'Avg Profit', v: st.avgProfit === null ? '—' : fmtPct(st.avgProfit),
+            c: st.avgProfit !== null && st.avgProfit < 0 ? 'var(--danger)' : 'var(--running)', h: 'rata-rata closed' },
+        ];
+        $('stats').innerHTML = cards.map((c) =>
+          `<div class="stat" style="--c:${c.c}"><div class="l">${c.l}</div><div class="v">${c.v}</div><div class="h">${c.h}</div></div>`
+        ).join('');
+      }
+
+      function renderTypes() {
+        $('types').innerHTML = TYPES.map((t) => {
+          const { count, rate } = typeWinRate(t);
+          const pct = rate === null ? 0 : rate;
+          return `<div class="type-card">
+            <div class="tn">${esc(t)}</div>
+            <div class="tr">${rate === null ? '—' : rate.toFixed(1) + '%'}</div>
+            <div class="tc">${count} signal${count === 1 ? '' : 's'}</div>
+            <div class="tbar"><i style="width:${pct.toFixed(0)}%"></i></div>
+          </div>`;
+        }).join('');
+      }
+
+      // ── donut + sparkline ──
+      function renderDonut() {
+        const st = statsOf(state.signals);
+        const parts = [
+          ['RUNNING', st.running, STATUS.RUNNING.color],
+          ['TP1 HIT', st.tp1, STATUS['TP1 HIT'].color],
+          ['DONE', st.done, STATUS.DONE.color],
+        ];
+        const total = st.total || 1;
+        const r = 54, c = 2 * Math.PI * r; let off = 0;
+        const segs = parts.filter(([, n]) => n > 0).map(([, n, col]) => {
+          const frac = n / total;
+          const s = `<circle r="${r}" cx="75" cy="75" fill="none" stroke="${col}" stroke-width="16"
+            stroke-dasharray="${(frac*c).toFixed(2)} ${c.toFixed(2)}" stroke-dashoffset="${(-off*c).toFixed(2)}"
+            stroke-linecap="round" transform="rotate(-90 75 75)"></circle>`;
+          off += frac; return s;
+        }).join('');
+        const legend = parts.map(([lab, n, col]) =>
+          `<div class="row"><span class="sw" style="background:${col}"></span>${lab}
+            <span class="muted">· ${n} (${st.total ? Math.round(n/st.total*100) : 0}%)</span></div>`).join('');
+        $('donut').innerHTML = `
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            <circle r="${r}" cx="75" cy="75" fill="none" stroke="#131722" stroke-width="16"></circle>
+            ${segs}
+            <text x="75" y="71" text-anchor="middle" fill="#eef2f7" font-size="26" font-weight="800">${st.total}</text>
+            <text x="75" y="91" text-anchor="middle" fill="#8a93a6" font-size="11">Total Signal</text>
+          </svg>
+          <div class="legend">${legend}</div>`;
+      }
+
+      function renderSpark() {
+        const closed = state.signals
+          .filter((s) => num(s.profit_pct) !== null)
+          .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+        if (!closed.length) { $('spark').innerHTML = '<div class="state">Belum ada data profit.</div>'; return; }
+        const vals = closed.map((s) => Number(s.profit_pct));
+        const W = 600, H = 200, pad = 18;
+        const max = Math.max(1, ...vals), min = Math.min(0, ...vals);
+        const x = (i) => pad + (i / Math.max(1, vals.length - 1)) * (W - pad * 2);
+        const y = (v) => H - pad - ((v - min) / (max - min || 1)) * (H - pad * 2);
+        const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+        const area = `${line} L${x(vals.length-1).toFixed(1)},${(H-pad).toFixed(1)} L${x(0).toFixed(1)},${(H-pad).toFixed(1)} Z`;
+        const zeroY = y(0).toFixed(1);
+        $('spark').innerHTML = `
+          <svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffce3a" stop-opacity="0.32"/>
+              <stop offset="1" stop-color="#ffce3a" stop-opacity="0"/></linearGradient></defs>
+            <line x1="${pad}" y1="${zeroY}" x2="${W-pad}" y2="${zeroY}" stroke="#1c2230" stroke-width="1" stroke-dasharray="4 4"/>
+            <path d="${area}" fill="url(#g)"/>
+            <path d="${line}" fill="none" stroke="#ffce3a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>`;
+      }
+
+      // ── signal card ──
+      function progressPct(s) {
+        const base = num(s.avg) ?? num(s.entry1);
+        const tp = num(s.tp), high = num(s.high);
+        if (base === null || tp === null || tp <= base) return s.status === 'RUNNING' ? 0 : 100;
+        const cur = high ?? base;
+        return Math.max(0, Math.min(100, ((cur - base) / (tp - base)) * 100));
+      }
+
+      function card(s) {
+        const meta = STATUS[s.status] || { label: s.status, cls: '', color: 'var(--muted)' };
+        const entries = `${dash(s.entry1)} <span class="dim">|</span> ${dash(s.entry2)} <span class="dim">|</span> ${dash(s.entry3)}`;
+        const prof = num(s.profit_pct);
+        const profHtml = prof === null ? '<span class="muted">—</span>'
+          : `<span class="prof ${prof >= 0 ? 'pos' : 'neg'}">${fmtPct(prof)}</span>`;
+        const closed = s.status !== 'RUNNING';
+        return `<article class="card ${meta.cls}">
+          <div class="card-top">
+            <div><div class="tk">${esc(s.ticker)}</div><div class="ty">${esc(s.type)}</div></div>
+            <span class="pill"><span class="sw"></span>${esc(meta.label)}</span>
+          </div>
+          <div class="kv">
+            <div class="full"><div class="k">Entry</div><div class="v">${entries}</div></div>
+            <div><div class="k">AVG</div><div class="v">${dash(s.avg)}</div></div>
+            <div><div class="k">TP</div><div class="v">${dash(s.tp)}</div></div>
+            ${closed ? `<div><div class="k">High</div><div class="v">${dash(s.high)}</div></div>
+            <div><div class="k">Status</div><div class="v">${esc(meta.label)}</div></div>` : ''}
+          </div>
+          <div class="prog">
+            <div class="prog-track"><i style="width:${progressPct(s).toFixed(0)}%"></i></div>
+            <div class="prog-meta"><span class="lab">${closed ? 'Profit' : 'Progress ke TP'}</span>${closed ? profHtml : `<span class="muted">${progressPct(s).toFixed(0)}%</span>`}</div>
+          </div>
+          <div class="card-foot">
+            <span>Signal: ${fmtDate(s.created_at)}</span>
+            <span>${s.closed_at ? 'Done: ' + fmtDate(s.closed_at) : (closed ? '' : 'Aktif')}</span>
+          </div>
+        </article>`;
+      }
+
+      // ── filtering + grouping ──
+      function filtered() {
+        const { q, status, type } = state.filter;
+        return state.signals.filter((s) => {
+          if (state.view === 'history' && s.status === 'RUNNING') return false;
+          if (status !== 'ALL' && s.status !== status) return false;
+          if (type !== 'ALL' && s.type !== type) return false;
+          if (q && !String(s.ticker).toLowerCase().includes(q.toLowerCase())) return false;
+          return true;
+        });
+      }
+
+      function renderGroups() {
+        const list = filtered();
+        if (!list.length) {
+          $('groups').innerHTML = `<div class="state">Tidak ada signal yang cocok dengan filter.</div>`;
+          return;
+        }
+        const order = TYPES.filter((t) => list.some((s) => s.type === t));
+        $('groups').innerHTML = order.map((t) => {
+          const items = list.filter((s) => s.type === t);
+          const { rate } = typeWinRate(t);
+          const collapsed = state.collapsed[t] ? ' collapsed' : '';
+          return `<div class="group${collapsed}" data-type="${esc(t)}">
+            <div class="group-head" data-toggle="${esc(t)}">
+              <span class="chev">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+              <span class="gt">${esc(t)}</span>
+              <span class="gc">${items.length} signal${items.length === 1 ? '' : 's'}</span>
+              <span class="gr">${rate === null ? '' : 'WR ' + rate.toFixed(1) + '%'}</span>
+            </div>
+            <div class="cards">${items.map(card).join('')}</div>
+          </div>`;
         }).join('');
 
-        $('filters').querySelectorAll('.chip').forEach((c) =>
-          c.addEventListener('click', () => {
-            state.filter = c.dataset.filter;
-            renderFilters();
-            renderRows();
+        $('groups').querySelectorAll('[data-toggle]').forEach((h) =>
+          h.addEventListener('click', () => {
+            const t = h.dataset.toggle;
+            state.collapsed[t] = !state.collapsed[t];
+            h.closest('.group').classList.toggle('collapsed', state.collapsed[t]);
           })
         );
       }
 
-      // ── Table rows ──
-      function renderRows() {
-        const list =
-          state.filter === 'ALL'
-            ? state.signals
-            : state.signals.filter((s) => s.status === state.filter);
-
-        if (!list.length) {
-          $('rows').innerHTML = `<tr><td colspan="6"><div class="state">
-            Tidak ada signal${state.filter === 'ALL' ? '' : ` dengan status ${esc(state.filter)}`}.
-          </div></td></tr>`;
-          return;
-        }
-
-        $('rows').innerHTML = list
-          .map((s) => {
-            const meta = STATUS[s.status] || { label: s.status, cls: '', color: 'var(--muted)' };
-            return `<tr>
-              <td><span class="ticker">${esc(s.ticker)}</span></td>
-              <td><span class="type-tag">${esc(s.type)}</span></td>
-              <td class="mono entries">${fmtEntries(s)}</td>
-              <td class="mono">${esc(fmtNum(s.tp) ?? '—')}</td>
-              <td><span class="badge ${meta.cls}"><span class="swatch"></span>${esc(meta.label)}</span></td>
-              <td class="mono muted">${fmtDate(s.created_at)}</td>
-            </tr>`;
-          })
-          .join('');
+      function applyView() {
+        const dash = state.view === 'dashboard';
+        $('chartSec').style.display = dash ? '' : 'none';
+        $('typesSec').style.display = dash ? '' : 'none';
+        $('analyticsSec').style.display = dash ? '' : 'none';
+        $('heroTitle').textContent = dash ? 'RISE Dashboard' : 'History Recap';
+        $('heroSub').textContent = dash ? 'Realtime Trading Community Dashboard' : 'Rekap performa signal yang sudah closed';
+        $('listTitle').textContent = dash ? 'Daftar Signal' : 'Riwayat Signal';
+        $('nav').querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.view === state.view));
       }
 
-      function setLive(ok) {
-        const dot = $('liveDot');
-        dot.classList.toggle('ok', ok);
-        dot.classList.toggle('down', !ok);
+      function renderAll() {
+        applyView();
+        renderStats();
+        renderTypes();
+        renderDonut();
+        renderSpark();
+        renderGroups();
+        const f = filtered();
+        $('listHint').textContent = `${f.length} ditampilkan`;
+        $('overviewHint').textContent = `${state.signals.length} total`;
       }
 
+      // ── data ──
+      function setLive(ok) { const d = $('liveDot'); d.classList.toggle('ok', ok); d.classList.toggle('down', !ok); }
       function setUpdated(date) {
-        const wib = new Date(date.getTime() + 7 * 3600 * 1000);
-        const hh = String(wib.getUTCHours()).padStart(2, '0');
-        const mm = String(wib.getUTCMinutes()).padStart(2, '0');
-        const ss = String(wib.getUTCSeconds()).padStart(2, '0');
-        $('updatedAt').textContent = `Diperbarui ${hh}:${mm}:${ss} WIB`;
+        const w = new Date(date.getTime() + 7 * 3600 * 1000);
+        const p = (n) => String(n).padStart(2, '0');
+        $('updatedAt').textContent = `Update ${p(w.getUTCHours())}:${p(w.getUTCMinutes())}:${p(w.getUTCSeconds())} WIB`;
       }
 
-      // ── Data fetch ──
       async function load() {
         if (state.loading) return;
-        state.loading = true;
-        $('refreshBtn').classList.add('spinning');
+        state.loading = true; $('refreshBtn').classList.add('spinning');
         try {
           const res = await fetch('/api/signals?limit=200', { headers: { Accept: 'application/json' } });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const body = await res.json();
           state.signals = Array.isArray(body.data) ? body.data : [];
           state.total = body.pagination?.total ?? state.signals.length;
-
-          renderStats();
-          renderFilters();
-          renderRows();
-          setLive(true);
-          setUpdated(new Date());
+          setLive(true); setUpdated(new Date());
+          renderAll();
         } catch (err) {
-          setLive(false);
-          $('updatedAt').textContent = 'Gagal memuat';
+          setLive(false); $('updatedAt').textContent = 'Gagal memuat';
           if (!state.signals.length) {
-            $('rows').innerHTML = `<tr><td colspan="6"><div class="state error">
-              Gagal mengambil data dari API: ${esc(err.message)}.<br />
-              Pastikan server berjalan (<code>npm run api</code>).
-            </div></td></tr>`;
+            $('groups').innerHTML = `<div class="state error">Gagal mengambil data: ${esc(err.message)}.<br/>Pastikan server berjalan (<code>npm run api</code>).</div>`;
           }
-        } finally {
-          state.loading = false;
-          $('refreshBtn').classList.remove('spinning');
-        }
+        } finally { state.loading = false; $('refreshBtn').classList.remove('spinning'); }
       }
 
-      function startAutoRefresh() {
-        if (timer) clearInterval(timer);
-        timer = setInterval(() => {
-          if (!document.hidden) load();
-        }, REFRESH_MS);
-      }
-
-      // Refresh immediately when the tab becomes visible again.
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) load();
-      });
+      // ── events ──
+      $('search').addEventListener('input', (e) => { state.filter.q = e.target.value; renderGroups(); $('listHint').textContent = `${filtered().length} ditampilkan`; });
+      $('fStatus').addEventListener('change', (e) => { state.filter.status = e.target.value; renderGroups(); $('listHint').textContent = `${filtered().length} ditampilkan`; });
+      $('fType').addEventListener('change', (e) => { state.filter.type = e.target.value; renderGroups(); $('listHint').textContent = `${filtered().length} ditampilkan`; });
       $('refreshBtn').addEventListener('click', load);
+      $('nav').querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => { state.view = b.dataset.view; renderAll(); }));
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 
       load();
-      startAutoRefresh();
+      timer = setInterval(() => { if (!document.hidden) load(); }, REFRESH_MS);
     </script>
   </body>
 </html>

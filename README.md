@@ -105,18 +105,23 @@ The command computes the entry **AVG**, inserts a `RUNNING` signal into SQLite
 
 ## Website (dashboard)
 
-A dark-mode, mobile-first dashboard lives in `public/index.html` as a single
+A modern black-and-gold dashboard lives in `public/index.html` as a single
 self-contained file (inline CSS + JS, no build step) and is served by the API
 itself. Open `http://localhost:3000/` after `npm run api`. It provides:
 
-- **Header** with the RISE logo, a live API-health dot, the last-updated time
-  (WIB), and a manual refresh button.
-- **Summary stats** — Total Signal, Win Rate, and Avg Profit (computed
-  client-side from the signal list).
-- **Signal table** — Ticker, Tipe, Entry, TP, Status, Tanggal — with
-  colour-coded status badges (RUNNING green / TP1 HIT amber / DONE blue).
-- **Status filter** — chips for Semua / RUNNING / TP1 HIT / DONE, each with a
-  live count.
+- **Header** with the RISE logo, Dashboard / History Recap views, a live
+  API-health dot, last-updated time (WIB), and a refresh button.
+- **IHSG Live Market** — embedded TradingView chart of the IDX Composite
+  (`IDX:COMPOSITE`); degrades to a placeholder without internet.
+- **Summary stats** — Total / Running / TP1 Hit / Done / Win Rate / Avg Profit,
+  each colour-accented.
+- **Win Rate per Tipe** and an **Analytics** row: a Signal-Status donut and a
+  Profit-Performance sparkline.
+- **Signal cards** grouped by type (collapsible sections) — gold ticker, status
+  pill + left accent bar (RUNNING green / TP1 HIT amber / DONE blue), entry/AVG/
+  TP/High, a progress-to-TP bar, and colour-coded profit.
+- **Controls** — search emiten, status filter, and type filter.
+- **History Recap** view — closed signals only (hides the chart/analytics).
 - **Auto-refresh** every 30s from `GET /api/signals` (paused while the tab is
   hidden, and triggered immediately when it regains focus).
 
