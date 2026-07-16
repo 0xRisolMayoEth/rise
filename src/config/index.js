@@ -80,8 +80,6 @@ const config = {
     idxUrl:
       process.env.IDX_API_URL ||
       'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}.JK',
-    // Auto-close RUNNING signals older than this many days (0 = disabled).
-    maxAgeDays: Number(process.env.TRACKER_MAX_AGE_DAYS) || 0,
     // Pause between quote requests within a pass (rate-limit friendliness).
     fetchDelayMs: numberOr(process.env.TRACKER_FETCH_DELAY_MS, 250),
     // Only run passes during IDX trading sessions. Defaults on for the live
@@ -110,10 +108,6 @@ const config = {
     // Deliberately strict — only A+ setups pass; lower it for more signals.
     minScore: numberOr(process.env.AGENT_MIN_SCORE, 85),
 
-    // Time stop: auto-close agent signals still RUNNING after N days
-    // (momentum setups lose their thesis fast; 0 = disabled).
-    maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_DAYS, 4),
-
     // Market-regime gate: skip signal runs when the IHSG is bearish
     // (below its EMA20 or dropping hard today).
     regime: {
@@ -125,24 +119,20 @@ const config = {
         'https://query1.finance.yahoo.com/v8/finance/chart/%5EJKSE',
     },
 
-    // Risk Manager: TP/SL percentages per signal type (from the entry AVG),
-    // plus the per-type time stop — short setups die fast, SWING needs room
-    // to reach its +10% target.
+    // Risk Manager: TP/SL percentages per signal type (from the entry AVG).
+    // No time stop — a RUNNING signal stays RUNNING until TP/SL is touched.
     types: {
       'HAKA PREOPEN': {
         tp: numberOr(process.env.AGENT_TP_HAKA, 3),
         sl: numberOr(process.env.AGENT_SL_HAKA, 10),
-        maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_HAKA, 3),
       },
       BSJP: {
         tp: numberOr(process.env.AGENT_TP_BSJP, 3),
         sl: numberOr(process.env.AGENT_SL_BSJP, 10),
-        maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_BSJP, 3),
       },
       SWING: {
         tp: numberOr(process.env.AGENT_TP_SWING, 10),
         sl: numberOr(process.env.AGENT_SL_SWING, 30),
-        maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_SWING, 15),
       },
     },
 

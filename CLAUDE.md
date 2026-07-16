@@ -239,7 +239,8 @@ Prototype React sudah dibuat dengan fitur:
 - Status berubah otomatis:
   - `RUNNING` → `TP1 HIT` ketika harga >= TP (prioritas bila TP & SL tersentuh di pass yang sama)
   - `RUNNING` → `CUT LOSS` ketika harga/low harian <= SL (hanya sinyal yang punya SL)
-  - `RUNNING` → `DONE` jika analis menutup manual / expired / invalid
+  - `RUNNING` → `DONE` jika analis menutup manual / invalid
+- Tidak ada penutupan berdasarkan umur: sinyal RUNNING tetap RUNNING sampai menyentuh TP/SL (atau ditutup manual)
 - Hitung Profit % berdasarkan AVG dan High Price; untuk CUT LOSS dihitung dari harga SL vs AVG (negatif)
 - Semua perubahan status dikirim otomatis ke Website, Discord, Telegram
 
@@ -272,7 +273,7 @@ Modul `src/agents/` — rule-based (tanpa LLM), semua agent modul fungsi murni y
 
 Jadwal harian (WIB, hanya hari bursa): scan **07:15** → HAKA PREOPEN **08:47** → BSJP **15:25** → SWING **16:15** → recap **17:00**.
 
-TP/SL default: HAKA PREOPEN & BSJP **+3% / −10%**, SWING **+10% / −30%** — dihitung dari AVG entry. Time stop per tipe: HAKA/BSJP 3 hari, SWING 15 hari (sinyal RUNNING melewati batas itu ditutup DONE).
+TP/SL default: HAKA PREOPEN & BSJP **+3% / −10%**, SWING **+10% / −30%** — dihitung dari AVG entry. Tanpa time stop: sinyal RUNNING tetap berjalan sampai TP atau SL tersentuh.
 
 Sinyal agent (`source='agent'`) di-broadcast otomatis ke channel member + Telegram; laporan scan/run/recap ke channel admin. Run manual: `npm run agents scan|haka|bsjp|swing|recap`. Update universe: `npm run universe`.
 

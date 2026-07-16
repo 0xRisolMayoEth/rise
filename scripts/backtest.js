@@ -40,15 +40,17 @@ function parseArgs(argv) {
 
 /**
  * Simulasikan satu sinyal dari hari `d` (entry = close hari itu).
- * @returns {{outcome:'TP'|'SL'|'TIME', profitPct:number, exitDay:number}}
+ * Meniru tracker live: posisi berjalan sampai TP atau SL tersentuh — tanpa
+ * time stop. Bila data habis sebelum keduanya, outcome OPEN (dikeluarkan
+ * dari statistik win rate karena nasibnya belum diketahui).
+ * @returns {{outcome:'TP'|'SL'|'OPEN', profitPct:number|null, exitDay:number}}
  */
-function simulate(candles, d, pct, maxAgeDays) {
+function simulate(candles, d, pct) {
   const entry = candles[d].close;
   const tp = entry * (1 + pct.tp / 100);
   const sl = entry * (1 - pct.sl / 100);
-  const lastDay = Math.min(candles.length - 1, maxAgeDays > 0 ? d + maxAgeDays : candles.length - 1);
 
-  for (let i = d + 1; i <= lastDay; i += 1) {
+  for (let i = d + 1; i < candles.length; i += 1) {
     const c = candles[i];
     const hitTp = c.high >= tp;
     const hitSl = c.low <= sl;
@@ -56,30 +58,27 @@ function simulate(candles, d, pct, maxAgeDays) {
     if (hitTp) return { outcome: 'TP', profitPct: pct.tp, exitDay: i };
     if (hitSl) return { outcome: 'SL', profitPct: -pct.sl, exitDay: i };
   }
-  const exit = candles[lastDay].close;
-  return {
-    outcome: 'TIME',
-    profitPct: Math.round(((exit - entry) / entry) * 10000) / 100,
-    exitDay: lastDay,
-  };
+  return { outcome: 'OPEN', profitPct: null, exitDay: candles.length - 1 };
 }
 
-/** Rangkum satu daftar trade menjadi metrik. */
+/** Rangkum satu daftar trade menjadi metrik (trade OPEN dikeluarkan). */
 function summarise(trades) {
-  const n = trades.length;
-  if (!n) return { signals: 0 };
-  const wins = trades.filter((t) => t.profitPct >= 0).length;
-  const grossP = trades.filter((t) => t.profitPct > 0).reduce((a, t) => a + t.profitPct, 0);
-  const grossL = Math.abs(trades.filter((t) => t.profitPct < 0).reduce((a, t) => a + t.profitPct, 0));
+  const open = trades.filter((t) => t.outcome === 'OPEN').length;
+  const closed = trades.filter((t) => t.outcome !== 'OPEN');
+  const n = closed.length;
+  if (!n) return { signals: 0, open };
+  const wins = closed.filter((t) => t.profitPct >= 0).length;
+  const grossP = closed.filter((t) => t.profitPct > 0).reduce((a, t) => a + t.profitPct, 0);
+  const grossL = Math.abs(closed.filter((t) => t.profitPct < 0).reduce((a, t) => a + t.profitPct, 0));
   const round2 = (x) => Math.round(x * 100) / 100;
   return {
     signals: n,
-    tp: trades.filter((t) => t.outcome === 'TP').length,
-    sl: trades.filter((t) => t.outcome === 'SL').length,
-    time: trades.filter((t) => t.outcome === 'TIME').length,
+    open,
+    tp: closed.filter((t) => t.outcome === 'TP').length,
+    sl: closed.filter((t) => t.outcome === 'SL').length,
     winRate: round2((wins / n) * 100),
     profitFactor: grossL > 0 ? round2(grossP / grossL) : grossP > 0 ? Infinity : 0,
-    expectancy: round2(trades.reduce((a, t) => a + t.profitPct, 0) / n),
+    expectancy: round2(closed.reduce((a, t) => a + t.profitPct, 0) / n),
   };
 }
 
@@ -145,7 +144,7 @@ async function main() {
 
       let exitDay = d;
       for (const [type, pct] of Object.entries(config.agents.types)) {
-        const r = simulate(candles, d, pct, pct.maxAgeDays ?? config.agents.maxAgeDays);
+        const r = simulate(candles, d, pct);
         byType[type].push({ ticker, day: d, score: a.score, ...r });
         exitDay = Math.max(exitDay, r.exitDay);
       }
@@ -154,23 +153,25 @@ async function main() {
   }
 
   console.log(`\n[backtest] ${scannedDays} hari-ticker dievaluasi · ${regimeBlocked} diblokir regime\n`);
-  console.log('Tipe           Sinyal  TP   SL   Time  WinRate   PF     Expectancy/sinyal');
+  console.log('Tipe           Closed  TP   SL   Open  WinRate   PF     Expectancy/sinyal');
   console.log('─'.repeat(78));
   for (const [type, trades] of Object.entries(byType)) {
     const s = summarise(trades);
     if (!s.signals) {
-      console.log(`${type.padEnd(14)} 0       —    —    —     —         —      —`);
+      console.log(`${type.padEnd(14)} 0       —    —    ${String(s.open ?? 0).padEnd(5)} —         —      —`);
       continue;
     }
     console.log(
       `${type.padEnd(14)} ${String(s.signals).padEnd(7)} ${String(s.tp).padEnd(4)} ` +
-        `${String(s.sl).padEnd(4)} ${String(s.time).padEnd(5)} ${String(s.winRate + '%').padEnd(9)} ` +
+        `${String(s.sl).padEnd(4)} ${String(s.open).padEnd(5)} ${String(s.winRate + '%').padEnd(9)} ` +
         `${String(s.profitFactor).padEnd(6)} ${s.expectancy >= 0 ? '+' : ''}${s.expectancy}%`
     );
   }
   console.log(
-    '\nCatatan: entry = close hari sinyal; belum termasuk slippage/fee; ' +
-      'TP+SL di hari yang sama dihitung loss (konservatif).'
+    '\nCatatan: entry = close hari sinyal; posisi berjalan sampai TP/SL (tanpa ' +
+      'time stop, meniru tracker live); Open = belum tersentuh sampai data habis, ' +
+      'dikeluarkan dari statistik; belum termasuk slippage/fee; TP+SL di hari ' +
+      'yang sama dihitung loss (konservatif).'
   );
 }
 

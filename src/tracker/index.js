@@ -10,7 +10,6 @@
  *   PRICE_SOURCE         mock | idx          (default: mock)
  *   TRACKER_CRON         cron expression     (default: every minute)
  *   IDX_API_URL          quote endpoint template with {ticker}
- *   TRACKER_MAX_AGE_DAYS auto-close expired RUNNING signals (0 = off)
  */
 const config = require('../config');
 const { getDb } = require('../database/db');
@@ -36,7 +35,7 @@ function main() {
   // Ensure the DB/schema exist.
   getDb();
   log.info(
-    `source=${config.tracker.source} maxAgeDays=${config.tracker.maxAgeDays} ` +
+    `source=${config.tracker.source} ` +
       `marketHoursOnly=${config.tracker.marketHoursOnly} ` +
       `fetchDelayMs=${config.tracker.fetchDelayMs}`
   );

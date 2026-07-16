@@ -7,9 +7,9 @@
  *   - keeps the high-water mark (`high`) and profit % up to date;
  *   - flips RUNNING -> DONE once the price reaches TP (the +N% target);
  *   - flips RUNNING -> CUT LOSS once the price touches the stop loss (`sl`),
- *     when the signal has one — TP wins if both trigger in the same pass;
- *   - optionally flips RUNNING -> DONE when a signal exceeds maxAgeDays
- *     (expired), per CLAUDE.md.
+ *     when the signal has one — TP wins if both trigger in the same pass.
+ * There is no age-based auto-close: a RUNNING signal stays RUNNING until it
+ * touches TP or SL (or an analyst closes it manually).
  * Profit % is computed from the entry AVG and the High price.
  *
  * Every status change is broadcast to Discord + Telegram via the notifier;
@@ -38,27 +38,14 @@ function computeProfit(base, high) {
 }
 
 /**
- * Age of a signal in whole days from its created_at (localtime text).
- * @param {string} createdAt
- * @returns {number}
- */
-function ageInDays(createdAt) {
-  if (!createdAt) return 0;
-  const t = Date.parse(String(createdAt).replace(' ', 'T'));
-  if (Number.isNaN(t)) return 0;
-  return (Date.now() - t) / (1000 * 60 * 60 * 24);
-}
-
-/**
  * Process a single signal against a fresh quote.
  * Returns the updated signal if its status changed, else null.
  *
  * @param {object} s          RUNNING signal row.
  * @param {{last:number, high:number, low?:number}} quote
- * @param {number} maxAgeDays
  * @returns {object|null}
  */
-function processSignal(s, quote, maxAgeDays) {
+function processSignal(s, quote) {
   const base = s.avg ?? s.entry1 ?? null;
   // High-water mark across passes: never let it shrink.
   const high = Math.max(s.high ?? 0, quote.high ?? 0, quote.last ?? 0);
@@ -88,23 +75,6 @@ function processSignal(s, quote, maxAgeDays) {
     });
   }
 
-  // Expired -> DONE. Agent signals use their own per-type time stop:
-  // a momentum setup that went nowhere has lost its thesis, but SWING gets
-  // more room than the short types.
-  const typeCfg = config.agents.types[s.type];
-  const ageLimit =
-    s.source === 'agent'
-      ? (typeCfg && typeCfg.maxAgeDays) ?? config.agents.maxAgeDays
-      : maxAgeDays;
-  if (ageLimit > 0 && ageInDays(s.created_at) >= ageLimit) {
-    return updateStatus(s.id, {
-      status: 'DONE',
-      high,
-      profit_pct: profit,
-      note: `Auto DONE — ${s.source === 'agent' ? 'time stop' : 'expired'} after ${ageLimit}d`,
-    });
-  }
-
   // No status change: just keep the high/profit current (no audit row).
   if (high > (s.high ?? 0)) {
     updateMetrics(s.id, { high, profit_pct: profit });
@@ -118,14 +88,12 @@ function processSignal(s, quote, maxAgeDays) {
  * @param {object} deps
  * @param {(ticker:string)=>Promise<{last:number,high:number}>} deps.fetchPrice
  * @param {(signal:object)=>Promise<void>} [deps.notify]   Called on status change.
- * @param {number} [deps.maxAgeDays=config.tracker.maxAgeDays]
  * @returns {Promise<{checked:number, changed:object[]}>}
  */
 async function runOnce(deps) {
   const {
     fetchPrice,
     notify,
-    maxAgeDays = config.tracker.maxAgeDays,
     fetchDelayMs = config.tracker.fetchDelayMs,
   } = deps;
   const running = listSignals({ status: 'RUNNING', limit: 1000 });
@@ -148,7 +116,7 @@ async function runOnce(deps) {
     const quote = quotes.get(s.ticker);
     if (!quote) continue;
     try {
-      const updated = processSignal(s, quote, maxAgeDays);
+      const updated = processSignal(s, quote);
       if (updated) {
         changed.push(updated);
         log.info(
@@ -248,5 +216,4 @@ module.exports = {
   checkStaleness,
   processSignal,
   computeProfit,
-  ageInDays,
 };

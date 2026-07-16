@@ -149,7 +149,7 @@ test('tracker flips RUNNING -> CUT LOSS when the low touches the SL', () => {
     ticker: 'CLTEST', type: 'BSJP', entry1: 1000, entry2: null, entry3: null,
     tp: 1030, sl: 900, source: 'agent', score: 80,
   });
-  const updated = processSignal(s, { last: 890, high: 1000, low: 885 }, 0);
+  const updated = processSignal(s, { last: 890, high: 1000, low: 885 });
   assert.equal(updated.status, 'CUT LOSS');
   assert.equal(updated.profit_pct, -10); // exit at the SL price vs AVG
   assert.ok(updated.closed_at, 'CUT LOSS closes the signal');
@@ -160,7 +160,7 @@ test('tracker prefers TP (-> DONE) over SL in the same pass', () => {
     ticker: 'TPTEST', type: 'BSJP', entry1: 1000, entry2: null, entry3: null,
     tp: 1030, sl: 900, source: 'agent', score: 80,
   });
-  const updated = processSignal(s, { last: 880, high: 1040, low: 870 }, 0);
+  const updated = processSignal(s, { last: 880, high: 1040, low: 870 });
   assert.equal(updated.status, 'DONE');
 });
 
@@ -168,7 +168,7 @@ test('signals without an SL never cut loss', () => {
   const s = createSignal({
     ticker: 'MANUAL', type: 'SWING', entry1: 1000, entry2: null, entry3: null, tp: 1100,
   });
-  const updated = processSignal(s, { last: 500, high: 1000, low: 490 }, 0);
+  const updated = processSignal(s, { last: 500, high: 1000, low: 490 });
   assert.equal(updated, null);
   assert.equal(getSignalById(s.id).status, 'RUNNING');
 });
