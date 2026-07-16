@@ -10,7 +10,9 @@
  *   SWING  16:15  setelah close
  *   recap  17:00  performa + saran coach
  *
- * Bisa juga dijalankan mandiri: `node src/agents/index.js scan|haka|bsjp|swing|recap`
+ * Dijalankan sebagai proses sendiri (PM2: rise-agents) atau one-shot:
+ *   node src/agents/index.js                  -> scheduler (long-running)
+ *   node src/agents/index.js scan|haka|bsjp|swing|recap
  */
 const cron = require('node-cron');
 const config = require('../config');
@@ -65,15 +67,27 @@ async function runCommand(cmd) {
 }
 
 if (require.main === module) {
-  runCommand(process.argv[2])
-    .then((r) => {
-      if (r) console.log(JSON.stringify(r, null, 2));
-      process.exit(0);
-    })
-    .catch((e) => {
-      console.error('[agents]', e.message);
+  if (process.argv[2]) {
+    // One-shot mode for testing/ops.
+    runCommand(process.argv[2])
+      .then((r) => {
+        if (r) console.log(JSON.stringify(r, null, 2));
+        process.exit(0);
+      })
+      .catch((e) => {
+        console.error('[agents]', e.message);
+        process.exit(1);
+      });
+  } else {
+    // Long-running scheduler mode (PM2). Respects the .env master switch so
+    // a stray `pm2 start` can't broadcast signals nobody asked for.
+    if (!config.agents.enabled) {
+      console.error('[agents] ENABLE_AGENTS bukan 1 di .env — scheduler tidak dijalankan.');
       process.exit(1);
-    });
+    }
+    require('../database/db').getDb();
+    start();
+  }
 }
 
 module.exports = { start, runCommand };
