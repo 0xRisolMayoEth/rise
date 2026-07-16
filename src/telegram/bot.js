@@ -10,6 +10,9 @@
  * The bot is created with polling disabled — we only ever send messages.
  */
 const config = require('../config');
+const { createLogger } = require('../utils/logger');
+
+const log = createLogger('telegram');
 
 let bot = null;
 
@@ -50,16 +53,14 @@ function isConfigured() {
 async function broadcast(text) {
   const b = getBot();
   if (!b || !config.telegram.chatId) {
-    console.warn('[telegram] not configured — skipping broadcast.');
+    log.warn('not configured — skipping broadcast.');
     return;
   }
 
   try {
     await b.sendMessage(config.telegram.chatId, text, { parse_mode: 'Markdown' });
   } catch (err) {
-    console.warn(
-      `[telegram] Markdown send failed (${err.message}); retrying as plain text.`
-    );
+    log.warn(`Markdown send failed; retrying as plain text`, { error: err.message });
     await b.sendMessage(config.telegram.chatId, text);
   }
 }

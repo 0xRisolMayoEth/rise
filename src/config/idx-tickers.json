@@ -1,0 +1,20 @@
+{
+  "note": "Universe scanner agent — emiten IDX likuid (LQ45/IDX80 + likuid lain). Perbarui manual atau via scripts/update-universe.js. Ticker tanpa suffix .JK.",
+  "tickers": [
+    "AALI", "ABMM", "ACES", "ADHI", "ADMR", "ADRO", "AGII", "AGRO", "AKRA", "AMMN",
+    "AMRT", "ANTM", "APIC", "ARTO", "ASII", "ASRI", "ASSA", "AUTO", "AVIA", "BBCA",
+    "BBHI", "BBKP", "BBNI", "BBRI", "BBTN", "BBYB", "BDMN", "BEST", "BFIN", "BIRD",
+    "BJBR", "BJTM", "BMRI", "BNGA", "BRIS", "BRMS", "BRPT", "BREN", "BSDE", "BTPS",
+    "BUKA", "BUMI", "CMRY", "CPIN", "CTRA", "CUAN", "DEWA", "DMAS", "DOID", "DRMA",
+    "DSNG", "DSSA", "ELSA", "EMTK", "ENRG", "ERAA", "ESSA", "EXCL", "FILM", "GEMS",
+    "GGRM", "GJTL", "GOOD", "GOTO", "HEAL", "HMSP", "HRUM", "ICBP", "IMAS", "INCO",
+    "INDF", "INDY", "INKP", "INTP", "ISAT", "ISSP", "ITMG", "JPFA", "JSMR", "KAEF",
+    "KIJA", "KLBF", "LPKR", "LPPF", "LSIP", "MAIN", "MAPA", "MAPI", "MBMA", "MDKA",
+    "MEDC", "MEGA", "MIDI", "MIKA", "MNCN", "MTEL", "MYOR", "NCKL", "NISP", "PANI",
+    "PGAS", "PGEO", "PNBN", "POWR", "PRDA", "PSAB", "PTBA", "PTPP", "PTRO", "PWON",
+    "RAJA", "RALS", "ROTI", "SCMA", "SIDO", "SILO", "SIMP", "SMDR", "SMGR", "SMRA",
+    "SMSM", "SSIA", "SSMS", "SGRO", "TAPG", "TBIG", "TINS", "TKIM", "TLKM", "TMAS",
+    "TOBA", "TOTL", "TOWR", "TPIA", "ULTJ", "UNTR", "UNVR", "WIFI", "WIIM", "WTON",
+    "WEGE", "WIKA"
+  ]
+}

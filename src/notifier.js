@@ -16,6 +16,9 @@ const { REST, Routes } = require('discord.js');
 const config = require('./config');
 const telegramBot = require('./telegram/bot');
 const { formatSignal, formatDone, asCodeBlock } = require('./utils/format');
+const { createLogger } = require('./utils/logger');
+
+const log = createLogger('notifier');
 
 let rest = null;
 function getRest() {
@@ -48,10 +51,27 @@ function channelForType(type) {
 async function toDiscordChannel(content, channelId = config.discord.signalChannelId) {
   const api = getRest();
   if (!api || !channelId) {
-    console.warn('[notifier] Discord channel not configured — skipping.');
+    log.warn('Discord channel not configured — skipping.');
     return;
   }
   await api.post(Routes.channelMessages(channelId), { body: { content } });
+}
+
+/**
+ * Send an operational alert to the Discord admin channel.
+ * Never mirrored to member-facing Telegram — ops noise stays internal.
+ * @param {string} text
+ * @returns {Promise<boolean>} true when actually sent.
+ */
+async function notifyAdmin(text) {
+  const api = getRest();
+  const channelId = config.discord.adminChannelId;
+  if (!api || !channelId) {
+    log.warn('admin alert skipped — DISCORD_ADMIN_CHANNEL_ID not configured', { text });
+    return false;
+  }
+  await api.post(Routes.channelMessages(channelId), { body: { content: text } });
+  return true;
 }
 
 /**
@@ -90,14 +110,21 @@ async function broadcastSignal(signal, channels = {}) {
   const results = await Promise.allSettled(tasks.map(([, p]) => p));
   results.forEach((r, i) => {
     if (r.status === 'rejected') {
-      console.error(
-        `[notifier] ${tasks[i][0]} failed:`,
-        r.reason?.message || r.reason
-      );
+      log.error(`${tasks[i][0]} broadcast failed`, {
+        error: r.reason?.message || String(r.reason),
+        signalId: signal.id,
+        ticker: signal.ticker,
+      });
     }
   });
 
   return text;
 }
 
-module.exports = { broadcastSignal, toDiscordChannel, toTelegram, channelForType };
+module.exports = {
+  broadcastSignal,
+  toDiscordChannel,
+  toTelegram,
+  notifyAdmin,
+  channelForType,
+};

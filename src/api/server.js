@@ -17,6 +17,9 @@
 const path = require('path');
 const config = require('../config');
 const { getDb } = require('../database/db');
+const { createLogger } = require('../utils/logger');
+
+const log = createLogger('api');
 
 function createServer() {
   // Lazy-require so express stays optional until the API is needed.
@@ -28,7 +31,7 @@ function createServer() {
 
   // Lightweight request logger.
   app.use((req, _res, next) => {
-    console.log(`[api] ${req.method} ${req.originalUrl}`);
+    log.info(`${req.method} ${req.originalUrl}`);
     next();
   });
 
@@ -51,7 +54,7 @@ function createServer() {
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     const status = err.status || 500;
-    if (status >= 500) console.error('[api] error:', err);
+    if (status >= 500) log.error('request failed', { error: err.message, status });
     res.status(status).json({ error: err.message || 'internal error' });
   });
 
@@ -63,7 +66,7 @@ function start() {
   getDb();
   const app = createServer();
   return app.listen(config.api.port, () => {
-    console.log(`[api] Listening on http://localhost:${config.api.port}`);
+    log.info(`Listening on http://localhost:${config.api.port}`);
   });
 }
 

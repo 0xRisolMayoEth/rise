@@ -30,6 +30,9 @@ function computeAvg(entries) {
  * @param {number|null} input.entry2
  * @param {number|null} input.entry3
  * @param {number} input.tp
+ * @param {number} [input.sl]       Stop-loss price (tracker auto CUT LOSS).
+ * @param {string} [input.source]   'manual' (default) or 'agent'.
+ * @param {number} [input.score]    Technical score for agent signals.
  * @returns {object} the created signal row.
  */
 function createSignal(input) {
@@ -37,8 +40,8 @@ function createSignal(input) {
   const avg = computeAvg([input.entry1, input.entry2, input.entry3]);
 
   const insert = db.prepare(`
-    INSERT INTO signals (ticker, type, entry1, entry2, entry3, avg, tp, status)
-    VALUES (@ticker, @type, @entry1, @entry2, @entry3, @avg, @tp, 'RUNNING')
+    INSERT INTO signals (ticker, type, entry1, entry2, entry3, avg, tp, sl, source, score, status)
+    VALUES (@ticker, @type, @entry1, @entry2, @entry3, @avg, @tp, @sl, @source, @score, 'RUNNING')
   `);
 
   const logUpdate = db.prepare(`
@@ -56,6 +59,9 @@ function createSignal(input) {
       entry3: row.entry3,
       avg,
       tp: row.tp,
+      sl: row.sl ?? null,
+      source: row.source || 'manual',
+      score: row.score ?? null,
     });
     logUpdate.run(result.lastInsertRowid);
     return result.lastInsertRowid;
@@ -145,7 +151,7 @@ function getSignalUpdates(signalId) {
  *
  * @param {number} id
  * @param {object} patch
- * @param {string} patch.status   RUNNING | TP1 HIT | DONE
+ * @param {string} patch.status   RUNNING | TP1 HIT | DONE | CUT LOSS
  * @param {number} [patch.high]
  * @param {number} [patch.profit_pct]
  * @param {string} [patch.note]
@@ -153,7 +159,7 @@ function getSignalUpdates(signalId) {
  */
 function updateStatus(id, patch) {
   const db = getDb();
-  const closing = patch.status === 'DONE';
+  const closing = patch.status === 'DONE' || patch.status === 'CUT LOSS';
 
   const update = db.prepare(`
     UPDATE signals SET

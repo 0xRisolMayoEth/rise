@@ -15,8 +15,11 @@
 const config = require('../config');
 const { getDb } = require('../database/db');
 const { getSource } = require('./sources');
-const { broadcastSignal } = require('../notifier');
+const { broadcastSignal, notifyAdmin } = require('../notifier');
 const { start, runOnce } = require('./tracker');
+const { createLogger } = require('../utils/logger');
+
+const log = createLogger('tracker');
 
 function buildDeps() {
   const source = getSource();
@@ -24,20 +27,24 @@ function buildDeps() {
     fetchPrice: source.fetchPrice,
     // Status changes go to the Discord feed channel (REST) + Telegram.
     notify: (signal) => broadcastSignal(signal, { discord: true, telegram: true }),
+    // Ops alerts (staleness) go to the Discord admin channel only.
+    notifyAdmin,
   };
 }
 
 function main() {
   // Ensure the DB/schema exist.
   getDb();
-  console.log(
-    `[tracker] source=${config.tracker.source} maxAgeDays=${config.tracker.maxAgeDays}`
+  log.info(
+    `source=${config.tracker.source} maxAgeDays=${config.tracker.maxAgeDays} ` +
+      `marketHoursOnly=${config.tracker.marketHoursOnly} ` +
+      `fetchDelayMs=${config.tracker.fetchDelayMs}`
   );
 
   const deps = buildDeps();
 
   // Run an immediate pass on boot, then schedule the recurring loop.
-  runOnce(deps).catch((e) => console.error('[tracker] initial pass error:', e));
+  runOnce(deps).catch((e) => log.error('initial pass error', { error: e.message }));
   start(deps);
 }
 

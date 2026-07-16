@@ -34,6 +34,11 @@ async function main() {
   if (process.env.ENABLE_TRACKER === '1') {
     require('./tracker/index').main();
   }
+
+  // Trading agents — automated signal pipeline (optional).
+  if (config.agents.enabled) {
+    require('./agents').start();
+  }
 }
 
 main().catch((err) => {

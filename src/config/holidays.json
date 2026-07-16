@@ -1,0 +1,8 @@
+{
+  "note": "IDX exchange holidays (YYYY-MM-DD, WIB). Update yearly from the official IDX trading calendar (idx.co.id) — Islamic holidays and cuti bersama move every year, so this list MUST be maintained by hand. Only fixed-date holidays are pre-filled.",
+  "dates": [
+    "2026-01-01",
+    "2026-08-17",
+    "2026-12-25"
+  ]
+}

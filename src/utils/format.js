@@ -66,7 +66,8 @@ function trimNum(v) {
  * @param {number} [s.entry3]
  * @param {number} [s.avg]
  * @param {number} s.tp
- * @param {string} s.status       RUNNING | TP1 HIT | DONE
+ * @param {number} [s.sl]         Stop-loss price (agent signals).
+ * @param {string} s.status       RUNNING | TP1 HIT | DONE | CUT LOSS
  * @param {number} [s.high]
  * @param {number} [s.profit_pct]
  * @param {Date}   [date]         Timestamp for the footer line.
@@ -74,10 +75,12 @@ function trimNum(v) {
  */
 function formatSignal(s, date = new Date()) {
   const header =
-    s.status === 'RUNNING' ? 'NEW SIGNAL' : s.status; // "TP1 HIT" / "DONE"
+    s.status === 'RUNNING' ? 'NEW SIGNAL' : s.status; // "TP1 HIT" / "DONE" / "CUT LOSS"
 
   const entries = `${entryVal(s.entry1)} | ${entryVal(s.entry2)} | ${entryVal(s.entry3)}`;
-  const tpLine = s.status === 'RUNNING' ? trimNum(s.tp) : `${trimNum(s.tp)} ✓`;
+  // The check mark only marks a TP actually reached.
+  const tpHit = s.status === 'TP1 HIT' || s.status === 'DONE';
+  const tpLine = tpHit ? `${trimNum(s.tp)} ✓` : trimNum(s.tp);
 
   const lines = [
     `● ${header}`,
@@ -86,6 +89,11 @@ function formatSignal(s, date = new Date()) {
     `├ AVG    : ${entryVal(s.avg)}`,
     `├ TP     : ${tpLine}`,
   ];
+
+  // SL only appears on signals that have one (agent pipeline).
+  if (s.sl !== null && s.sl !== undefined) {
+    lines.push(`├ SL     : ${trimNum(s.sl)}`);
+  }
 
   // High and Profit only appear once the signal has moved past RUNNING.
   if (s.status !== 'RUNNING') {

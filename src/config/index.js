@@ -11,6 +11,21 @@ const path = require('path');
  */
 const ROOT = path.resolve(__dirname, '..', '..');
 
+/** Number from env, falling back when unset/blank/NaN (0 stays valid). */
+function numberOr(raw, fallback) {
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** Boolean from env ("0"/"false"/"no"/"off" are false), with a default. */
+function boolOr(raw, fallback) {
+  if (raw === undefined || raw === '') return fallback;
+  return !['0', 'false', 'no', 'off'].includes(String(raw).toLowerCase());
+}
+
+const priceSource = process.env.PRICE_SOURCE || 'mock';
+
 const config = {
   root: ROOT,
 
@@ -58,7 +73,7 @@ const config = {
 
   tracker: {
     // Which price source to use: 'mock' (no network, for dev) or 'idx'.
-    source: process.env.PRICE_SOURCE || 'mock',
+    source: priceSource,
     // Cron schedule for the tracking pass. Default: every minute.
     cron: process.env.TRACKER_CRON || '* * * * *',
     // IDX/quote endpoint template; "{ticker}" is replaced per request.
@@ -67,6 +82,96 @@ const config = {
       'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}.JK',
     // Auto-close RUNNING signals older than this many days (0 = disabled).
     maxAgeDays: Number(process.env.TRACKER_MAX_AGE_DAYS) || 0,
+    // Pause between quote requests within a pass (rate-limit friendliness).
+    fetchDelayMs: numberOr(process.env.TRACKER_FETCH_DELAY_MS, 250),
+    // Only run passes during IDX trading sessions. Defaults on for the live
+    // source; the mock source keeps running around the clock for dev.
+    marketHoursOnly: boolOr(
+      process.env.TRACKER_MARKET_HOURS_ONLY,
+      priceSource === 'idx'
+    ),
+    // Admin alert when no successful pass for this many minutes while the
+    // market is open (0 = disabled), and the cooldown between alerts.
+    staleAlertMin: numberOr(process.env.TRACKER_STALE_ALERT_MIN, 15),
+    alertCooldownMin: numberOr(process.env.TRACKER_ALERT_COOLDOWN_MIN, 60),
+  },
+
+  agents: {
+    // Master switch for the automated signal pipeline (ENABLE_AGENTS=1).
+    enabled: boolOr(process.env.ENABLE_AGENTS, false),
+
+    // Portfolio Manager: virtual capital and allocation limits.
+    capital: numberOr(process.env.AGENT_CAPITAL, 100_000_000),
+    maxPositionPct: numberOr(process.env.AGENT_MAX_POSITION_PCT, 5),
+    maxOpenPositions: numberOr(process.env.AGENT_MAX_OPEN_POSITIONS, 30),
+    maxSignalsPerRun: numberOr(process.env.AGENT_MAX_SIGNALS_PER_RUN, 2),
+
+    // Technical Analyst: minimum score (0-100) to qualify as a candidate.
+    // Deliberately strict — only A+ setups pass; lower it for more signals.
+    minScore: numberOr(process.env.AGENT_MIN_SCORE, 85),
+
+    // Time stop: auto-close agent signals still RUNNING after N days
+    // (momentum setups lose their thesis fast; 0 = disabled).
+    maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_DAYS, 4),
+
+    // Market-regime gate: skip signal runs when the IHSG is bearish
+    // (below its EMA20 or dropping hard today).
+    regime: {
+      enabled: boolOr(process.env.AGENT_REGIME_FILTER, true),
+      // Skip runs when the index is down more than this % on the day.
+      maxDailyDrop: numberOr(process.env.AGENT_REGIME_MAX_DROP, 1),
+      indexUrl:
+        process.env.AGENT_INDEX_URL ||
+        'https://query1.finance.yahoo.com/v8/finance/chart/%5EJKSE',
+    },
+
+    // Risk Manager: TP/SL percentages per signal type (from the entry AVG),
+    // plus the per-type time stop — short setups die fast, SWING needs room
+    // to reach its +10% target.
+    types: {
+      'HAKA PREOPEN': {
+        tp: numberOr(process.env.AGENT_TP_HAKA, 3),
+        sl: numberOr(process.env.AGENT_SL_HAKA, 10),
+        maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_HAKA, 3),
+      },
+      BSJP: {
+        tp: numberOr(process.env.AGENT_TP_BSJP, 3),
+        sl: numberOr(process.env.AGENT_SL_BSJP, 10),
+        maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_BSJP, 3),
+      },
+      SWING: {
+        tp: numberOr(process.env.AGENT_TP_SWING, 10),
+        sl: numberOr(process.env.AGENT_SL_SWING, 30),
+        maxAgeDays: numberOr(process.env.AGENT_MAX_AGE_SWING, 15),
+      },
+    },
+
+    // Schedules (WIB via cron timezone; trading days only — holidays are
+    // filtered at runtime with isTradingDay()).
+    scanCron: process.env.AGENT_SCAN_CRON || '15 7 * * 1-5',
+    hakaCron: process.env.AGENT_HAKA_CRON || '47 8 * * 1-5',
+    bsjpCron: process.env.AGENT_BSJP_CRON || '25 15 * * 1-5',
+    swingCron: process.env.AGENT_SWING_CRON || '15 16 * * 1-5',
+    recapCron: process.env.AGENT_RECAP_CRON || '0 17 * * 1-5',
+
+    // Market Scanner filters.
+    universePath: path.isAbsolute(process.env.AGENT_UNIVERSE_PATH || '')
+      ? process.env.AGENT_UNIVERSE_PATH
+      : path.join(ROOT, process.env.AGENT_UNIVERSE_PATH || 'src/config/idx-tickers.json'),
+    historyRange: process.env.AGENT_HISTORY_RANGE || '3mo',
+    minPrice: numberOr(process.env.AGENT_MIN_PRICE, 60),
+    // Minimum median daily transaction value (price × volume), in IDR.
+    minValue: numberOr(process.env.AGENT_MIN_VALUE, 1_000_000_000),
+    // Last-day volume must be at least this multiple of the 20-day average.
+    volumeSpike: numberOr(process.env.AGENT_VOLUME_SPIKE, 1.5),
+    // Pause between history/quote requests during a scan.
+    fetchDelayMs: numberOr(process.env.AGENT_FETCH_DELAY_MS, 300),
+  },
+
+  logging: {
+    // debug | info | warn | error
+    level: (process.env.LOG_LEVEL || 'info').toLowerCase(),
+    dir: path.join(ROOT, 'logs'),
   },
 
   // All times across the system use WIB (UTC+7).

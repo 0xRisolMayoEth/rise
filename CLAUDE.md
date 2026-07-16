@@ -14,6 +14,8 @@ Sistem signal saham terintegrasi dengan:
 
 Analis membuat signal manual via Discord command, sistem menyebarkannya ke semua platform dan tracking performa secara otomatis berdasarkan harga real-time IDX.
 
+Selain input manual, ada **Trading Agents** (`src/agents/`, aktif via `ENABLE_AGENTS=1`): pipeline rule-based Market Scanner → Technical Analyst → Risk Manager → News Analyst → Portfolio Manager yang dikoordinasi Orchestrator, menghasilkan sinyal otomatis (source `agent`) dengan TP/SL per tipe — HAKA PREOPEN & BSJP: TP +3% / SL −10%; SWING: TP +10% / SL −30% (configurable via env `AGENT_*`). Performance Analyst + Trading Coach mengirim recap harian ke channel admin. Lihat bagian "Trading Agents" di bawah.
+
 ---
 
 ## Tipe Signal
@@ -64,12 +66,28 @@ Analis membuat signal manual via Discord command, sistem menyebarkannya ke semua
 └ 24 Jun 2026 • 16:03 WIB
 ```
 
+### CUT LOSS (sinyal agent yang menyentuh stop loss)
+```
+● CUT LOSS
+┌ SCMA – BSJP
+├ Entry  : 214 | 200 | 190
+├ AVG    : 200
+├ TP     : 222
+├ SL     : 180
+├ High   : 205
+├ Profit : -10.00%
+├ Status : CUT LOSS
+└ 24 Jun 2026 • 15:25 WIB
+```
+
 ### Catatan Format
 - Gunakan ASCII line (`┌ ├ └`) seperti contoh
 - Monospace font di Discord & Telegram (gunakan code block ` ``` `)
 - Entry selalu 3 angka; jika tidak ada, isi `-`
 - AVG selalu di bawah Entry, TP hanya satu
-- Status: `RUNNING`, `TP1 HIT`, `DONE`
+- Baris `SL` hanya muncul pada sinyal yang punya stop loss (sinyal agent)
+- Tanda `✓` pada TP hanya untuk status TP1 HIT / DONE
+- Status: `RUNNING`, `TP1 HIT`, `DONE`, `CUT LOSS`
 - Tampilkan tanggal & waktu format: `24 Jun 2026 • 15:12 WIB`
 - Tidak menggunakan emoji, sticker, atau dekorasi tambahan
 
@@ -105,12 +123,27 @@ CREATE TABLE signals (
   entry3 REAL,
   avg REAL,
   tp REAL NOT NULL,
-  status TEXT DEFAULT 'RUNNING' CHECK(status IN ('RUNNING','TP1 HIT','DONE')),
+  sl REAL,                             -- stop loss (sinyal agent)
+  status TEXT DEFAULT 'RUNNING' CHECK(status IN ('RUNNING','TP1 HIT','DONE','CUT LOSS')),
   high REAL,
   profit_pct REAL,
+  source TEXT DEFAULT 'manual' CHECK(source IN ('manual','agent')),
+  score INTEGER,                       -- skor Technical Analyst (agent)
   created_at TEXT DEFAULT (datetime('now','localtime')),
   updated_at TEXT DEFAULT (datetime('now','localtime')),
   closed_at TEXT
+);
+
+-- Kandidat hasil scan harian pipeline agent
+CREATE TABLE agent_candidates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  scan_date TEXT NOT NULL,
+  ticker TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  last REAL, support1 REAL, support2 REAL, resistance REAL,
+  metrics TEXT,
+  created_at TEXT DEFAULT (datetime('now','localtime')),
+  UNIQUE(scan_date, ticker)
 );
 
 -- Log perubahan status
@@ -204,9 +237,10 @@ Prototype React sudah dibuat dengan fitur:
 
 - Sistem mengambil harga real-time dari sumber data IDX / API
 - Status berubah otomatis:
-  - `RUNNING` → `TP1 HIT` ketika harga >= TP
+  - `RUNNING` → `TP1 HIT` ketika harga >= TP (prioritas bila TP & SL tersentuh di pass yang sama)
+  - `RUNNING` → `CUT LOSS` ketika harga/low harian <= SL (hanya sinyal yang punya SL)
   - `RUNNING` → `DONE` jika analis menutup manual / expired / invalid
-- Hitung Profit % berdasarkan AVG dan High Price
+- Hitung Profit % berdasarkan AVG dan High Price; untuk CUT LOSS dihitung dari harga SL vs AVG (negatif)
 - Semua perubahan status dikirim otomatis ke Website, Discord, Telegram
 
 ---
@@ -216,6 +250,33 @@ Prototype React sudah dibuat dengan fitur:
 - 🟢 **RUNNING** = Hijau
 - 🟡 **TP1 HIT** = Kuning/Amber  
 - 🔵 **DONE** = Biru
+- 🔴 **CUT LOSS** = Merah
+
+---
+
+## Trading Agents (pipeline sinyal otomatis)
+
+Modul `src/agents/` — rule-based (tanpa LLM), semua agent modul fungsi murni yang dirangkai **Orchestrator**. Aktif via `ENABLE_AGENTS=1`; konfigurasi lengkap di `.env.example` (blok `AGENT_*`).
+
+| Agent | File | Tugas |
+|-------|------|-------|
+| Market Regime | `marketRegime.js` | Gerbang pasar: batalkan run saat IHSG di bawah EMA20 atau turun >1% hari itu (fail-open bila data index gagal) |
+| Market Scanner | `marketScanner.js` | Scan universe (`src/config/idx-tickers.json`), filter harga/likuiditas/volume spike |
+| Technical Analyst | `technicalAnalyst.js` | Skor 0–100 (ketat, default lolos ≥85): EMA9/21, RSI 55–65, MACD, volume ≥2×, breakout resistance 20 hari |
+| Risk Manager | `riskManager.js` | Entry ladder, TP/SL dari AVG (dibulatkan ke fraksi harga IDX), ukuran posisi, R/R |
+| News Analyst | `newsAnalyst.js` | v1 rule-based: veto pump 2 hari / gap-up ekstrem (siap di-upgrade ke sumber berita) |
+| Portfolio Manager | `portfolioManager.js` | Maks posisi terbuka, kuota per run, skip ticker yang masih RUNNING, alokasi modal |
+| Performance Analyst | `performanceAnalyst.js` | Win rate, profit factor, max drawdown per tipe |
+| Trading Coach | `tradingCoach.js` | Saran rule-based (streak CUT LOSS, win rate/PF rendah) |
+| Orchestrator | `orchestrator.js` | Merangkai pipeline, laporan ke channel admin, broadcast sinyal |
+
+Jadwal harian (WIB, hanya hari bursa): scan **07:15** → HAKA PREOPEN **08:47** → BSJP **15:25** → SWING **16:15** → recap **17:00**.
+
+TP/SL default: HAKA PREOPEN & BSJP **+3% / −10%**, SWING **+10% / −30%** — dihitung dari AVG entry. Time stop per tipe: HAKA/BSJP 3 hari, SWING 15 hari (sinyal RUNNING melewati batas itu ditutup DONE).
+
+Sinyal agent (`source='agent'`) di-broadcast otomatis ke channel member + Telegram; laporan scan/run/recap ke channel admin. Run manual: `npm run agents scan|haka|bsjp|swing|recap`. Update universe: `npm run universe`.
+
+**Backtest** (`npm run backtest -- --limit 30 --range 6mo`): walk-forward memakai modul pipeline yang sama (scanner, analyst, news, regime) terhadap data historis; laporan win rate / profit factor / expectancy per tipe. Konservatif: TP+SL tersentuh di hari yang sama dihitung loss; belum termasuk slippage/fee.
 
 ---
 

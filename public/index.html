@@ -500,11 +500,11 @@
           <div class="metrics">
             <div class="m"><div class="k">Entry</div><div class="v">${dash(s.entry1)}<span class="dim">/</span>${dash(s.entry2)}<span class="dim">/</span>${dash(s.entry3)}</div></div>
             <div class="m"><div class="k">AVG</div><div class="v">${dash(s.avg)}</div></div>
-            <div class="m"><div class="k">TP</div><div class="v">${dash(s.tp)}</div></div>
+            <div class="m"><div class="k">${s.sl != null ? 'TP/SL' : 'TP'}</div><div class="v">${dash(s.tp)}${s.sl != null ? `<span class="dim">/</span>${dash(s.sl)}` : ''}</div></div>
             <div class="m"><div class="k">High</div><div class="v">${dash(s.high)}</div></div>
           </div>
           <div class="ft">
-            <span class="pill"><span class="sw"></span>${running ? 'RUNNING' : 'DONE'}</span>
+            <span class="pill"><span class="sw"></span>${running ? 'RUNNING' : esc(s.status || 'DONE')}</span>
             ${running ? `<span class="date">Aktif</span>` : `<span class="prof ${prof !== null && prof < 0 ? 'neg' : 'pos'}">${fmtPct(prof)}</span>`}
           </div>
         </article>`;

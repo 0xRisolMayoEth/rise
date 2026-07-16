@@ -6,8 +6,11 @@ const { getDb } = require('../database/db');
  * Analytics queries backing the dashboard / statistics / calendar views.
  */
 
-const STATUSES = ['RUNNING', 'TP1 HIT', 'DONE'];
+const STATUSES = ['RUNNING', 'TP1 HIT', 'DONE', 'CUT LOSS'];
 const TYPES = ['HAKA PREOPEN', 'SNIPER', 'BSJP', 'SWING'];
+
+// A signal is "closed" once it leaves RUNNING.
+const CLOSED_FILTER = "status IN ('TP1 HIT','DONE','CUT LOSS')";
 
 /**
  * Aggregate counts grouped by a column, returned as a complete map so every
@@ -43,8 +46,7 @@ function getStats() {
   const byStatus = countsBy('status', STATUSES);
   const byType = countsBy('type', TYPES);
 
-  // A signal is "closed" once it leaves RUNNING.
-  const closedFilter = "status IN ('TP1 HIT','DONE')";
+  const closedFilter = CLOSED_FILTER;
   const closed = db
     .prepare(`SELECT COUNT(*) AS n FROM signals WHERE ${closedFilter}`)
     .get().n;
@@ -84,6 +86,77 @@ function getStats() {
 }
 
 /**
+ * Trading-performance metrics over closed signals, overall and per type:
+ * win rate, profit factor (gross profit% / gross loss%), average profit,
+ * and maximum drawdown of the cumulative profit% curve (in close order).
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.source]  Restrict to 'manual' or 'agent' signals.
+ * @param {number} [opts.days]    Only signals closed within the last N days.
+ * @returns {{overall: object, byType: Record<string, object>}}
+ */
+function getPerformance(opts = {}) {
+  const clauses = [CLOSED_FILTER, 'profit_pct IS NOT NULL'];
+  const params = {};
+  if (opts.source) {
+    clauses.push('source = @source');
+    params.source = opts.source;
+  }
+  if (opts.days) {
+    clauses.push("closed_at >= datetime('now','localtime', @cutoff)");
+    params.cutoff = `-${Math.floor(opts.days)} days`;
+  }
+
+  const rows = getDb()
+    .prepare(
+      `SELECT type, status, profit_pct FROM signals
+        WHERE ${clauses.join(' AND ')}
+        ORDER BY closed_at ASC, id ASC`
+    )
+    .all(params);
+
+  const metricsOf = (list) => {
+    const closed = list.length;
+    const wins = list.filter((r) => r.profit_pct >= 0).length;
+    const grossProfit = list
+      .filter((r) => r.profit_pct > 0)
+      .reduce((a, r) => a + r.profit_pct, 0);
+    const grossLoss = Math.abs(
+      list.filter((r) => r.profit_pct < 0).reduce((a, r) => a + r.profit_pct, 0)
+    );
+    const cutLosses = list.filter((r) => r.status === 'CUT LOSS').length;
+
+    // Max drawdown of the cumulative profit% curve, in close order.
+    let equity = 0;
+    let peak = 0;
+    let maxDrawdown = 0;
+    for (const r of list) {
+      equity += r.profit_pct;
+      peak = Math.max(peak, equity);
+      maxDrawdown = Math.max(maxDrawdown, peak - equity);
+    }
+
+    const round2 = (n) => Math.round(n * 100) / 100;
+    return {
+      closed,
+      wins,
+      losses: closed - wins,
+      cutLosses,
+      winRate: closed ? round2((wins / closed) * 100) : 0,
+      profitFactor: grossLoss > 0 ? round2(grossProfit / grossLoss) : grossProfit > 0 ? Infinity : 0,
+      avgProfit: closed ? round2(list.reduce((a, r) => a + r.profit_pct, 0) / closed) : 0,
+      maxDrawdown: round2(maxDrawdown),
+    };
+  };
+
+  const byType = {};
+  for (const t of TYPES) {
+    byType[t] = metricsOf(rows.filter((r) => r.type === t));
+  }
+  return { overall: metricsOf(rows), byType };
+}
+
+/**
  * Calendar data for a month: the number of signals created on each day.
  * @param {number} year   e.g. 2026
  * @param {number} month  1-12
@@ -108,4 +181,4 @@ function getCalendar(year, month) {
   return { year, month, days };
 }
 
-module.exports = { getStats, getCalendar, STATUSES, TYPES };
+module.exports = { getStats, getCalendar, getPerformance, STATUSES, TYPES };

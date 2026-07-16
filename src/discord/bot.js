@@ -14,6 +14,9 @@ const config = require('../config');
 const { getDb } = require('../database/db');
 const { loadCommands } = require('./commands');
 const adminSignals = require('./adminSignals');
+const { createLogger } = require('../utils/logger');
+
+const log = createLogger('bot');
 
 function createClient() {
   const client = new Client({
@@ -30,12 +33,12 @@ function createClient() {
   client.commands = loadCommands();
 
   client.once(Events.ClientReady, (c) => {
-    console.log(`[bot] Logged in as ${c.user.tag}`);
-    console.log(`[bot] Loaded commands: ${[...client.commands.keys()].join(', ')}`);
+    log.info(`Logged in as ${c.user.tag}`);
+    log.info(`Loaded commands: ${[...client.commands.keys()].join(', ')}`);
     if (config.discord.adminChannelId) {
-      console.log(`[bot] Admin signal channel: ${config.discord.adminChannelId}`);
+      log.info(`Admin signal channel: ${config.discord.adminChannelId}`);
     } else {
-      console.warn('[bot] DISCORD_ADMIN_CHANNEL_ID not set — admin text flow disabled.');
+      log.warn('DISCORD_ADMIN_CHANNEL_ID not set — admin text flow disabled.');
     }
   });
 
@@ -44,7 +47,7 @@ function createClient() {
     try {
       await adminSignals.handleMessage(message);
     } catch (err) {
-      console.error('[bot] admin message error:', err);
+      log.error('admin message error', { error: err.message });
     }
   });
 
@@ -54,7 +57,7 @@ function createClient() {
       try {
         await adminSignals.handleInteraction(interaction);
       } catch (err) {
-        console.error('[bot] admin interaction error:', err);
+        log.error('admin interaction error', { error: err.message });
       }
       return;
     }
@@ -63,14 +66,14 @@ function createClient() {
 
     const command = client.commands.get(interaction.commandName);
     if (!command) {
-      console.warn(`[bot] Unknown command: ${interaction.commandName}`);
+      log.warn(`Unknown command: ${interaction.commandName}`);
       return;
     }
 
     try {
       await command.execute(interaction);
     } catch (err) {
-      console.error(`[bot] Error in /${interaction.commandName}:`, err);
+      log.error(`Error in /${interaction.commandName}`, { error: err.message });
       const payload = {
         content: 'Terjadi kesalahan saat menjalankan command.',
         flags: MessageFlags.Ephemeral,
@@ -88,7 +91,7 @@ function createClient() {
 
 async function start() {
   if (!config.discord.token) {
-    console.error('[bot] DISCORD_TOKEN is not set. See .env.example.');
+    log.error('DISCORD_TOKEN is not set. See .env.example.');
     process.exit(1);
   }
 

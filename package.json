@@ -6,13 +6,17 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",
+    "test": "node --test",
     "bot": "node src/discord/bot.js",
     "deploy-commands": "node src/discord/deploy-commands.js",
     "migrate": "node src/database/migrate.js",
     "seed": "node src/database/seed.js",
     "api": "node src/api/server.js",
     "tracker": "node src/tracker/index.js",
-    "telegram": "node src/telegram/index.js"
+    "telegram": "node src/telegram/index.js",
+    "agents": "node src/agents/index.js",
+    "universe": "node scripts/update-universe.js",
+    "backtest": "node scripts/backtest.js"
   },
   "keywords": [
     "discord",
